@@ -410,6 +410,18 @@ namespace daw {
 				auto result = pop_front( pos );
 				return result;
 			}
+
+			/// @brief searches for where, returns substring between front and
+			/// where, then pops off the substring
+			/// @param where string to split on and remove from front
+			/// @return substring from beginning to where string
+			[[nodiscard]] constexpr basic_string_view pop_front_until( CharT where,
+			                                                           nodiscard_t ) {
+				auto pos = find( where );
+				auto result = pop_front( pos );
+				return result;
+			}
+
 			/// @brief searches for where, returns substring between front and
 			/// where, then pops off the substring and the where string
 			/// @param where string to split on and remove from front
@@ -419,6 +431,17 @@ namespace daw {
 				auto pos = find( where );
 				auto result = pop_front( pos );
 				remove_prefix( where.size( ) );
+				return result;
+			}
+
+			/// @brief searches for where, returns substring between front and
+			/// where, then pops off the substring and the where string
+			/// @param where string to split on and remove from front
+			/// @return substring from beginning to where string
+			[[nodiscard]] constexpr basic_string_view pop_front_until( CharT where ) {
+				auto pos = find( where );
+				auto result = pop_front( pos );
+				remove_prefix( );
 				return result;
 			}
 
@@ -474,6 +497,21 @@ namespace daw {
 			}
 
 			/// @brief searches for last where, returns substring between where and
+			/// end, then pops off the substring
+			/// @param where string to split on and remove from back
+			/// @return substring from end of where string to end of string
+			[[nodiscard]] constexpr basic_string_view pop_back_until( CharT where,
+			                                                          nodiscard_t ) {
+				auto pos = rfind( where );
+				if( pos == npos ) {
+					auto result{ *this };
+					remove_prefix( npos );
+					return result;
+				}
+				return substr( pos + where.size( ) );
+			}
+
+			/// @brief searches for last where, returns substring between where and
 			/// end, then pops off the substring and the where string
 			/// @param where string to split on and remove from back
 			/// @return substring from end of where string to end of string
@@ -486,6 +524,22 @@ namespace daw {
 					return result;
 				}
 				auto result = substr( pos + where.size( ) );
+				remove_suffix( size( ) - pos );
+				return result;
+			}
+
+			/// @brief searches for last where, returns substring between where and
+			/// end, then pops off the substring and the where string
+			/// @param where string to split on and remove from back
+			/// @return substring from end of where string to end of string
+			[[nodiscard]] constexpr basic_string_view pop_back_until( char where ) {
+				auto pos = rfind( where );
+				if( pos == npos ) {
+					auto result{ *this };
+					remove_prefix( npos );
+					return result;
+				}
+				auto result = substr( pos + 1 );
 				remove_suffix( size( ) - pos );
 				return result;
 			}
