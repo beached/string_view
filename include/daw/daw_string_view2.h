@@ -34,6 +34,9 @@
 
 namespace daw {
 	namespace sv2 {
+		struct nodiscard_t {};
+		inline constexpr nodiscard_t nodiscard = nodiscard_t{ };
+
 		namespace sv2_details {
 			template<typename T>
 			constexpr std::size_t find_predicate_result_size( T ) {
@@ -398,6 +401,16 @@ namespace daw {
 			}
 
 			/// @brief searches for where, returns substring between front and
+			/// where, then pops off the substring
+			/// @param where string to split on and remove from front
+			/// @return substring from beginning to where string
+			[[nodiscard]] constexpr basic_string_view
+			pop_front_until( basic_string_view where, nodiscard_t ) {
+				auto pos = find( where );
+				auto result = pop_front( pos );
+				return result;
+			}
+			/// @brief searches for where, returns substring between front and
 			/// where, then pops off the substring and the where string
 			/// @param where string to split on and remove from front
 			/// @return substring from beginning to where string
@@ -443,6 +456,21 @@ namespace daw {
 				basic_string_view result = substr( size( ) - count, npos );
 				remove_suffix( count );
 				return result;
+			}
+
+			/// @brief searches for last where, returns substring between where and
+			/// end, then pops off the substring
+			/// @param where string to split on and remove from back
+			/// @return substring from end of where string to end of string
+			[[nodiscard]] constexpr basic_string_view
+			pop_back_until( basic_string_view where, nodiscard_t ) {
+				auto pos = rfind( where );
+				if( pos == npos ) {
+					auto result{ *this };
+					remove_prefix( npos );
+					return result;
+				}
+				return substr( pos + where.size( ) );
 			}
 
 			/// @brief searches for last where, returns substring between where and

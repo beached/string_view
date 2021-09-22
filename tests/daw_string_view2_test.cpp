@@ -828,11 +828,12 @@ namespace daw {
 #ifndef DAW_SV_NOSTDSTRING
 	void daw_pop_front_sv_test_001( ) {
 		std::string str = "This is a test";
-		daw::sv2::string_view sv{ str.data( ), str.size( ) };
-		daw::expecting( sv.pop_front_until( " " ), "This" );
-		daw::expecting( sv.pop_front_until( " " ), "is" );
-		daw::expecting( sv.pop_front_until( " " ), "a" );
-		daw::expecting( sv.pop_front_until( " " ), "test" );
+		auto sv = daw::sv2::string_view( str.data( ), str.size( ) );
+		using namespace daw::sv2::string_view_literals;
+		daw::expecting( "This"_sv, sv.pop_front_until( " " ) );
+		daw::expecting( "is"_sv, sv.pop_front_until( " " ) );
+		daw::expecting( "a"_sv, sv.pop_front_until( " " ) );
+		daw::expecting( "test"_sv, sv.pop_front_until( " " ) );
 		daw::expecting( sv.empty( ) );
 	}
 
@@ -847,10 +848,11 @@ namespace daw {
 	void daw_pop_back_sv_test_001( ) {
 		std::string str = "This is a test";
 		daw::sv2::string_view sv{ str.data( ), str.size( ) };
-		daw::expecting( sv.pop_back_until( " " ), "test" );
-		daw::expecting( sv.pop_back_until( " " ), "a" );
-		daw::expecting( sv.pop_back_until( " " ), "is" );
-		daw::expecting( sv.pop_back_until( " " ), "This" );
+		using namespace sv2::string_view_literals;
+		daw::expecting( "test"_sv, sv.pop_back_until( " " ) );
+		daw::expecting( "a"_sv, sv.pop_back_until( " " ) );
+		daw::expecting( "is"_sv, sv.pop_back_until( " " ) );
+		daw::expecting( "This"_sv, sv.pop_back_until( " " ) );
 		daw::expecting( sv.empty( ) );
 	}
 
