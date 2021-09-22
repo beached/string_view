@@ -30,25 +30,40 @@
 #include <limits>
 #include <stdexcept>
 
-#ifndef NOSTRING
-#include <string>
-#if defined( __cpp_lib_string_view )
-#include <string_view>
-#endif
-#endif
-
 #include <vector>
 
 namespace daw {
 	namespace sv2 {
-		template<typename T>
-		constexpr std::size_t find_predicate_result_size( T ) {
-			return 1;
-		}
-
 		namespace sv2_details {
 			template<typename T>
+			constexpr std::size_t find_predicate_result_size( T ) {
+				return 1;
+			}
+
+			template<typename T>
 			constexpr bool is_dynamic_sv_v = T::extent == dynamic_string_size;
+
+			template<typename T>
+			using has_datasize_test = typename std::remove_reference<
+			  decltype( std::data( std::declval<T const &>( ) ) +
+			            std::size( std::declval<T const &>( ) ) )>::type;
+
+			template<typename T>
+			using is_sv2_test = typename T::i_am_a_daw_string_view2;
+
+			template<typename T, typename CharT>
+			struct is_string_view_like
+			  : std::conjunction<daw::is_detected<has_datasize_test, T>,
+			                     daw::not_trait<daw::is_detected<is_sv2_test, T>>> {};
+
+			static_assert( daw::is_detected_v<has_datasize_test, std::string> );
+			static_assert(
+			  daw::not_trait<daw::is_detected<is_sv2_test, std::string>>::value );
+			static_assert( is_string_view_like<std::string, char>::value );
+
+			template<typename T, typename CharT>
+			struct is_contigious_range_constructible
+			  : std::is_constructible<T, CharT *, std::size_t> {};
 		} // namespace sv2_details
 
 		template<typename CharT, string_view_bounds_type BoundsType,
@@ -66,6 +81,7 @@ namespace daw {
 			using const_reverse_iterator = std::reverse_iterator<const_iterator>;
 			using size_type = std::size_t;
 			using difference_type = std::ptrdiff_t;
+			using i_am_a_daw_string_view2 = void;
 			static constexpr ptrdiff_t extent = Extent;
 
 			template<typename, string_view_bounds_type, ptrdiff_t>
@@ -201,27 +217,28 @@ namespace daw {
 			                                   ( std::min )( sv.size( ), count ) ) ) {
 			}
 
+			template<
+			  typename StringView,
+			  std::enable_if_t<sv2_details::is_string_view_like<
+			                     daw::remove_cvref_t<StringView>, CharT>::value,
+			                   std::nullptr_t> = nullptr>
+			constexpr basic_string_view( StringView &&sv ) noexcept
+			  : m_first( std::data( sv ) )
+			  , m_last( make_last<BoundsType>( std::data( sv ), std::size( sv ) ) ) {}
+
 			template<std::size_t N>
-			constexpr basic_string_view( CharT const ( &cstr )[N] ) noexcept
+			constexpr basic_string_view( CharT const( &&cstr )[N] ) noexcept
 			  : m_first( cstr )
 			  , m_last( make_last<BoundsType>( N - 1 ) ) {}
 
-#ifndef NOSTRING
-			template<typename Traits, typename Allocator>
-			basic_string_view(
-			  std::basic_string<CharT, Traits, Allocator> const &str ) noexcept
-			  : m_first( str.data( ) )
-			  , m_last( make_last<BoundsType>( str.data( ), str.size( ) ) ) {}
-
-#if defined( __cpp_lib_string_view )
-			template<typename Traits>
-			constexpr basic_string_view(
-			  std::basic_string_view<CharT, Traits> sv ) noexcept
-			  : m_first( sv.data( ) )
-			  , m_last( make_last<BoundsType>( sv.data( ), sv.size( ) ) ) {}
-#endif
-#endif
-
+			template<typename T,
+			         std::enable_if_t<sv2_details::is_contigious_range_constructible<
+			                            T, CharT>::value,
+			                          std::nullptr_t> = nullptr>
+			constexpr operator T( ) noexcept(
+			  std::is_nothrow_constructible_v<T, CharT *, std::size_t> ) {
+				return T{ data( ), size( ) };
+			}
 #if not defined( _MSC_VER ) or defined( __clang__ )
 			template<string_view_bounds_type Bounds, ptrdiff_t Ex>
 			constexpr auto
@@ -241,20 +258,6 @@ namespace daw {
 			  : m_first( first )
 			  , m_last( make_last<BoundsType>( first, last ) ) {}
 
-		private:
-			/// If you really want to do this, use to_string_view as storing the
-			/// address of temporaries is often a mistake
-#ifndef NOSTRING
-			template<typename Traits, typename Allocator>
-			basic_string_view(
-			  std::basic_string<CharT, Traits, Allocator> &&str ) noexcept
-			  : m_first( str.data( ) )
-			  , m_last( make_last<BoundsType>( str.data( ), str.size( ) ) ) {}
-
-			template<typename Traits, typename Allocator>
-			friend basic_string_view to_string_view(
-			  std::basic_string<CharT, Traits, Allocator> &&str ) noexcept;
-#endif
 			//
 			// END OF constructors
 		public:
@@ -265,27 +268,6 @@ namespace daw {
 			constexpr operator basic_string_view<CharT, Bounds, Ex>( ) noexcept {
 				return { m_first, m_last };
 			}
-
-#ifndef NOSTRING
-			template<typename Traits, typename Allocator>
-			operator std::basic_string<CharT, Traits, Allocator>( ) const {
-				return to_string( );
-			}
-
-#if defined( __cpp_lib_string_view )
-			template<typename Traits>
-			constexpr operator std::basic_string_view<CharT, Traits>( ) const {
-				return { data( ), size( ) };
-			}
-#endif
-			template<typename Traits, typename Allocator>
-			basic_string_view &operator=(
-			  std::basic_string<CharT, Traits, Allocator> const &str ) noexcept {
-				m_first = str.data( );
-				m_last = make_last<BoundsType>( str.data( ), str.size( ) );
-				return *this;
-			}
-#endif
 
 			[[nodiscard]] constexpr const_iterator begin( ) const {
 				return m_first;
@@ -346,8 +328,8 @@ namespace daw {
 				return end( );
 			}
 
-			// Do not use, use either data( ) if you are sure it is zero terminated or
-			// copy to a string
+			// Do not use, use either data( ) if you are sure it is zero terminated
+			// or copy to a string
 			[[nodiscard, deprecated]] constexpr const_pointer c_str( ) const {
 				return m_first;
 			}
@@ -415,8 +397,8 @@ namespace daw {
 				return result;
 			}
 
-			/// @brief searches for where, returns substring between front and where,
-			/// then pops off the substring and the where string
+			/// @brief searches for where, returns substring between front and
+			/// where, then pops off the substring and the where string
 			/// @param where string to split on and remove from front
 			/// @return substring from beginning to where string
 			[[nodiscard]] constexpr basic_string_view
@@ -427,10 +409,10 @@ namespace daw {
 				return result;
 			}
 
-			/// @brief creates a substr of the substr from begin to position reported
-			/// true by predicate
-			/// @tparam UnaryPredicate a unary predicate type that accepts a char and
-			/// indicates with true when to stop
+			/// @brief creates a substr of the substr from begin to position
+			/// reported true by predicate
+			/// @tparam UnaryPredicate a unary predicate type that accepts a char
+			/// and indicates with true when to stop
 			/// @param pred predicate to determine where to split
 			/// @return substring from beginning to position marked by predicate
 			template<
@@ -442,7 +424,7 @@ namespace daw {
 
 				auto pos = find_first_of_if( daw::move( pred ) );
 				auto result = pop_front( pos );
-				remove_prefix( sv2::find_predicate_result_size( pred ) );
+				remove_prefix( sv2_details::find_predicate_result_size( pred ) );
 				return result;
 			}
 
@@ -483,8 +465,8 @@ namespace daw {
 			/// @brief searches for last position UnaryPredicate would be true,
 			/// returns substring between pred and end, then pops off the substring
 			/// and the pred specified string
-			/// @tparam UnaryPredicate a unary predicate type that accepts a char and
-			/// indicates with true when to stop
+			/// @tparam UnaryPredicate a unary predicate type that accepts a char
+			/// and indicates with true when to stop
 			/// @param pred predicate to determine where to split
 			/// @return substring from last position marked by predicate to end
 			template<
@@ -500,14 +482,15 @@ namespace daw {
 					remove_prefix( npos );
 					return result;
 				}
-				auto result = substr( pos + sv2::find_predicate_result_size( pred ) );
+				auto result =
+				  substr( pos + sv2_details::find_predicate_result_size( pred ) );
 				remove_suffix( size( ) - pos );
 				return result;
 			}
 
-			/// @brief searches for where, returns substring between front and where,
-			/// then pops off the substring and the where string. Do nothing if where
-			/// is not found
+			/// @brief searches for where, returns substring between front and
+			/// where, then pops off the substring and the where string. Do nothing
+			/// if where is not found
 			/// @param where string to split on and remove from front
 			/// @return substring from beginning to where string
 			[[nodiscard]] constexpr basic_string_view
@@ -537,8 +520,8 @@ namespace daw {
 				return result;
 			}
 
-			/// @brief searches for where, and disgregards everything until the end of
-			/// that
+			/// @brief searches for where, and disgregards everything until the end
+			/// of that
 			/// @param where string to find and consume
 			/// @return substring with everything up until the end of where removed
 			[[nodiscard]] constexpr basic_string_view &
@@ -860,24 +843,12 @@ namespace daw {
 				                      pos );
 			}
 
-#ifndef NOSTRING
-			template<typename Traits = std::char_traits<CharT>,
-			         typename Allocator = std::allocator<CharT>>
-			[[nodiscard]] std::basic_string<CharT, Traits, Allocator>
-			to_string( ) const {
-				std::basic_string<CharT, Traits, Allocator> result;
-				result.reserve( size( ) );
-				daw::algorithm::copy_n( begin( ), std::back_inserter( result ),
-				                        size( ) );
-				return result;
-			}
-#endif
 		private:
 			[[nodiscard]] constexpr size_type
 			reverse_distance( const_reverse_iterator first,
 			                  const_reverse_iterator last ) const {
-				// Portability note here: std::distance is not NOEXCEPT, but calling it
-				// with a string_view::reverse_iterator will not throw.
+				// Portability note here: std::distance is not NOEXCEPT, but calling
+				// it with a string_view::reverse_iterator will not throw.
 				return ( size( ) - 1u ) -
 				       static_cast<size_t>( std::distance( first, last ) );
 			}
@@ -1094,6 +1065,145 @@ namespace daw {
 			[[nodiscard]] constexpr bool ends_with( const_pointer s ) const {
 				return ends_with( basic_string_view<CharT, BoundsType>( s ) );
 			}
+
+			[[nodiscard]] friend constexpr bool
+			operator==( basic_string_view lhs, basic_string_view rhs ) noexcept {
+				return lhs.compare( rhs ) == 0;
+			}
+
+			template<typename Rhs,
+			         std::enable_if_t<
+			           daw::not_trait<std::is_same<basic_string_view, Rhs>>::value,
+			           std::nullptr_t> = nullptr>
+			[[nodiscard]] friend constexpr bool operator==( basic_string_view lhs,
+			                                                Rhs const &rhs ) {
+				return lhs.compare( basic_string_view( rhs ) ) == 0;
+			}
+
+			template<typename Lhs,
+			         std::enable_if_t<
+			           daw::not_trait<std::is_same<basic_string_view, Lhs>>::value,
+			           std::nullptr_t> = nullptr>
+			[[nodiscard]] friend constexpr bool operator==( Lhs const &lhs,
+			                                                basic_string_view rhs ) {
+				return basic_string_view( lhs ).compare( rhs ) == 0;
+			}
+
+			[[nodiscard]] friend constexpr bool
+			operator!=( basic_string_view lhs, basic_string_view rhs ) noexcept {
+				return lhs.compare( rhs ) != 0;
+			}
+
+			template<typename Rhs,
+			         std::enable_if_t<
+			           daw::not_trait<std::is_same<basic_string_view, Rhs>>::value,
+			           std::nullptr_t> = nullptr>
+			[[nodiscard]] friend constexpr bool operator!=( basic_string_view lhs,
+			                                                Rhs const &rhs ) {
+				return lhs.compare( basic_string_view( rhs ) ) != 0;
+			}
+
+			template<typename Lhs,
+			         std::enable_if_t<
+			           daw::not_trait<std::is_same<basic_string_view, Lhs>>::value,
+			           std::nullptr_t> = nullptr>
+			[[nodiscard]] friend constexpr bool operator!=( Lhs const &lhs,
+			                                                basic_string_view rhs ) {
+				return basic_string_view( lhs ).compare( rhs ) != 0;
+			}
+
+			[[nodiscard]] friend constexpr bool
+			operator<( basic_string_view lhs, basic_string_view rhs ) noexcept {
+				return lhs.compare( rhs ) < 0;
+			}
+
+			template<typename Rhs,
+			         std::enable_if_t<
+			           daw::not_trait<std::is_same<basic_string_view, Rhs>>::value,
+			           std::nullptr_t> = nullptr>
+			[[nodiscard]] friend constexpr bool operator<( basic_string_view lhs,
+			                                               Rhs const &rhs ) {
+				return lhs.compare( basic_string_view( rhs ) ) < 0;
+			}
+
+			template<typename Lhs,
+			         std::enable_if_t<
+			           daw::not_trait<std::is_same<basic_string_view, Lhs>>::value,
+			           std::nullptr_t> = nullptr>
+			[[nodiscard]] friend constexpr bool operator<( Lhs const &lhs,
+			                                               basic_string_view rhs ) {
+				return basic_string_view( lhs ).compare( rhs ) < 0;
+			}
+
+			[[nodiscard]] friend constexpr bool
+			operator<=( basic_string_view lhs, basic_string_view rhs ) noexcept {
+				return lhs.compare( rhs ) <= 0;
+			}
+
+			template<typename Rhs,
+			         std::enable_if_t<
+			           daw::not_trait<std::is_same<basic_string_view, Rhs>>::value,
+			           std::nullptr_t> = nullptr>
+			[[nodiscard]] friend constexpr bool operator<=( basic_string_view lhs,
+			                                                Rhs const &rhs ) {
+				return lhs.compare( rhs ) <= 0;
+			}
+
+			template<typename Lhs,
+			         std::enable_if_t<
+			           daw::not_trait<std::is_same<basic_string_view, Lhs>>::value,
+			           std::nullptr_t> = nullptr>
+			[[nodiscard]] friend constexpr bool operator<=( Lhs const &lhs,
+			                                                basic_string_view rhs ) {
+				return basic_string_view( lhs ).compare( rhs ) <= 0;
+			}
+
+			[[nodiscard]] friend constexpr bool
+			operator>( basic_string_view lhs, basic_string_view rhs ) noexcept {
+				return lhs.compare( rhs ) > 0;
+			}
+
+			template<typename Rhs,
+			         std::enable_if_t<
+			           daw::not_trait<std::is_same<basic_string_view, Rhs>>::value,
+			           std::nullptr_t> = nullptr>
+			[[nodiscard]] friend constexpr bool operator>( basic_string_view lhs,
+			                                               Rhs const &rhs ) {
+				return lhs.compare( basic_string_view( rhs ) ) > 0;
+			}
+
+			template<typename Lhs,
+			         std::enable_if_t<
+			           daw::not_trait<std::is_same<basic_string_view, Lhs>>::value,
+			           std::nullptr_t> = nullptr>
+			[[nodiscard]] friend constexpr bool operator>( Lhs const &lhs,
+			                                               basic_string_view rhs ) {
+				return basic_string_view( lhs ).compare( rhs ) > 0;
+			}
+
+			[[nodiscard]] friend constexpr bool
+			operator>=( basic_string_view lhs, basic_string_view rhs ) noexcept {
+				return lhs.compare( basic_string_view( rhs ) ) >= 0;
+				return lhs.compare( rhs ) >= 0;
+			}
+
+			template<typename Rhs,
+			         std::enable_if_t<
+			           daw::not_trait<std::is_same<basic_string_view, Rhs>>::value,
+			           std::nullptr_t> = nullptr>
+			[[nodiscard]] friend constexpr bool operator>=( basic_string_view lhs,
+			                                                Rhs const &rhs ) {
+				return lhs.compare( basic_string_view( rhs ) ) >= 0;
+			}
+
+			template<typename Lhs,
+			         std::enable_if_t<
+			           daw::not_trait<std::is_same<basic_string_view, Lhs>>::value,
+			           std::nullptr_t> = nullptr>
+			[[nodiscard]] friend constexpr bool operator>=( Lhs const &lhs,
+			                                                basic_string_view rhs ) {
+				return basic_string_view( lhs ).compare( rhs ) >= 0;
+			}
 		}; // basic_string_view
 
 		// CTAD
@@ -1101,17 +1211,6 @@ namespace daw {
 		basic_string_view( CharT const *s, std::size_t count )
 		  -> basic_string_view<CharT>;
 
-#ifndef NOSTRING
-		template<typename CharT, typename Traits, typename Allocator>
-		basic_string_view( std::basic_string<CharT, Traits, Allocator> const &str )
-		  -> basic_string_view<CharT>;
-
-#if false and defined( __cpp_lib_string_view )
-	template<typename CharT, typename Traits>
-	daw::sv2::basic_string_view( std::basic_string_view<CharT, Traits> sv )
-	  ->daw::sv2::basic_string_view<CharT>;
-#endif
-#endif
 		template<typename CharT, std::size_t N>
 		basic_string_view( CharT const ( &cstr )[N] )
 		  -> basic_string_view<CharT, default_string_view_bounds_type, N - 1>;
@@ -1122,388 +1221,6 @@ namespace daw {
 		                     basic_string_view<CharT, Bounds, Ex> &rhs ) {
 			lhs.swap( rhs );
 		}
-
-#ifndef NOSTRING
-		template<typename CharT,
-		         string_view_bounds_type Bounds = default_string_view_bounds_type,
-		         typename Traits, typename Allocator>
-		[[nodiscard, deprecated]] basic_string_view<CharT, Bounds> to_string_view(
-		  std::basic_string<CharT, Traits, Allocator> &&str ) noexcept {
-			return basic_string_view<CharT, Bounds>( str.data( ), str.size( ) );
-		}
-#endif
-
-		template<typename CharT,
-		         string_view_bounds_type Bounds = default_string_view_bounds_type>
-		[[nodiscard]] constexpr basic_string_view<CharT, Bounds>
-		make_string_view_it( CharT const *first, CharT const *last ) noexcept {
-			return basic_string_view<CharT, Bounds>( first, last );
-		}
-
-		template<typename RandomIterator,
-		         typename CharT =
-		           typename std::iterator_traits<RandomIterator>::value_type,
-		         string_view_bounds_type Bounds = default_string_view_bounds_type>
-		[[nodiscard]] constexpr basic_string_view<CharT, Bounds>
-		make_string_view_it( RandomIterator first, RandomIterator last ) {
-			traits::is_random_access_iterator_test<RandomIterator>( );
-			traits::is_input_iterator_test<RandomIterator>( );
-
-			return { std::addressof( *first ),
-			         static_cast<std::size_t>( last - first ) };
-		}
-
-		template<typename CharT,
-		         string_view_bounds_type Bounds = default_string_view_bounds_type,
-		         typename Allocator>
-		[[nodiscard]] basic_string_view<CharT, Bounds>
-		make_string_view( std::vector<CharT, Allocator> const &v ) noexcept {
-			return { v.data( ), v.size( ) };
-		}
-
-#ifndef NOSTRING
-		template<string_view_bounds_type Bounds = default_string_view_bounds_type,
-		         typename CharT, typename Traits>
-		[[nodiscard]] daw::sv2::basic_string_view<CharT, Bounds>
-		make_string_view( std::basic_string<CharT, Traits> const &str ) {
-			return daw::sv2::basic_string_view<CharT, Bounds>{ str };
-		}
-#endif
-
-		template<string_view_bounds_type Bounds = default_string_view_bounds_type,
-		         typename CharT, std::size_t N>
-		[[nodiscard]] constexpr daw::sv2::basic_string_view<CharT>
-		make_string_view( CharT const ( &str )[N] ) {
-			return daw::sv2::basic_string_view<CharT, Bounds, N - 1>( str, N );
-		}
-
-		template<typename CharT, string_view_bounds_type Bounds>
-		[[nodiscard]] constexpr daw::sv2::basic_string_view<CharT, Bounds>
-		make_string_view( daw::sv2::basic_string_view<CharT, Bounds> sv ) {
-			return sv;
-		}
-		// basic_string_view / something else
-		//
-		namespace sv2_details::detectors {
-			template<typename T, typename CharT = char,
-			         string_view_bounds_type Bounds = default_string_view_bounds_type>
-			using can_be_string_view =
-			  decltype( daw::sv2::basic_string_view<CharT, Bounds>( T{ } ) );
-		}
-
-		template<typename CharT, string_view_bounds_type BL, std::ptrdiff_t ExL,
-		         string_view_bounds_type BR, std::ptrdiff_t ExR>
-		[[nodiscard]] constexpr bool
-		operator==( basic_string_view<CharT, BL, ExL> lhs,
-		            basic_string_view<CharT, BR, ExR> rhs ) {
-			return lhs.compare( rhs ) == 0;
-		}
-
-#ifndef NOSTRING
-		template<typename CharT, string_view_bounds_type Bounds, std::ptrdiff_t Ex,
-		         typename Traits, typename Allocator>
-		[[nodiscard]] constexpr bool
-		operator==( basic_string_view<CharT, Bounds, Ex> lhs,
-		            std::basic_string<CharT, Traits, Allocator> const &rhs ) {
-			return lhs.compare( basic_string_view<CharT, Bounds>(
-			         rhs.data( ), rhs.size( ) ) ) == 0;
-		}
-#endif
-		template<typename CharT, string_view_bounds_type Bounds, std::ptrdiff_t Ex>
-		[[nodiscard]] constexpr bool
-		operator==( basic_string_view<CharT, Bounds, Ex> lhs, CharT const *rhs ) {
-			return lhs.compare( basic_string_view<CharT, Bounds>( rhs ) ) == 0;
-		}
-#ifndef NOSTRING
-		template<typename CharT, typename Traits, string_view_bounds_type Bounds,
-		         std::ptrdiff_t Ex>
-		[[nodiscard]] constexpr bool
-		operator==( std::basic_string<CharT, Traits> const &lhs,
-		            basic_string_view<CharT, Bounds, Ex> rhs ) {
-			return basic_string_view<CharT, Bounds>( lhs.data( ), lhs.size( ) )
-			         .compare( rhs ) == 0;
-		}
-#endif
-		template<typename CharT, string_view_bounds_type Bounds, std::ptrdiff_t Ex>
-		[[nodiscard]] constexpr bool
-		operator==( CharT const *lhs, basic_string_view<CharT, Bounds, Ex> rhs ) {
-			return basic_string_view<CharT, Bounds>( lhs ).compare( rhs ) == 0;
-		}
-
-		template<typename CharT, string_view_bounds_type BL, std::ptrdiff_t ExL,
-		         string_view_bounds_type BR, std::ptrdiff_t ExR>
-		[[nodiscard]] constexpr bool
-		operator!=( basic_string_view<CharT, BL, ExL> lhs,
-		            basic_string_view<CharT, BR, ExR> rhs ) {
-			return lhs.compare( rhs ) != 0;
-		}
-
-#ifndef NOSTRING
-		template<typename CharT, string_view_bounds_type Bounds, std::ptrdiff_t Ex,
-		         typename Traits, typename Allocator>
-		[[nodiscard]] constexpr bool
-		operator!=( basic_string_view<CharT, Bounds, Ex> lhs,
-		            std::basic_string<CharT, Traits, Allocator> const &rhs ) {
-			return lhs.compare( basic_string_view<CharT, Bounds>(
-			         rhs.data( ), rhs.size( ) ) ) != 0;
-		}
-#endif
-		template<typename CharT, string_view_bounds_type Bounds, std::ptrdiff_t Ex>
-		[[nodiscard]] constexpr bool
-		operator!=( basic_string_view<CharT, Bounds, Ex> lhs, CharT const *rhs ) {
-			return lhs.compare( basic_string_view<CharT, Bounds>( rhs ) ) != 0;
-		}
-#ifndef NOSTRING
-		template<typename CharT, typename Traits, string_view_bounds_type Bounds,
-		         std::ptrdiff_t Ex>
-		[[nodiscard]] constexpr bool
-		operator!=( std::basic_string<CharT, Traits> const &lhs,
-		            basic_string_view<CharT, Bounds, Ex> rhs ) {
-			return basic_string_view<CharT, Bounds>( lhs.data( ), lhs.size( ) )
-			         .compare( rhs ) != 0;
-		}
-#endif
-		template<typename CharT, string_view_bounds_type Bounds, std::ptrdiff_t Ex>
-		[[nodiscard]] constexpr bool
-		operator!=( CharT const *lhs, basic_string_view<CharT, Bounds, Ex> rhs ) {
-			return basic_string_view<CharT, Bounds>( lhs ).compare( rhs ) != 0;
-		}
-
-		template<typename CharT, string_view_bounds_type BL, std::ptrdiff_t ExL,
-		         string_view_bounds_type BR, std::ptrdiff_t ExR>
-		[[nodiscard]] constexpr bool
-		operator<( basic_string_view<CharT, BL, ExL> lhs,
-		           basic_string_view<CharT, BR, ExR> rhs ) {
-			return lhs.compare( rhs ) < 0;
-		}
-
-#ifndef NOSTRING
-		template<typename CharT, string_view_bounds_type Bounds, std::ptrdiff_t Ex,
-		         typename Traits, typename Allocator>
-		[[nodiscard]] constexpr bool
-		operator<( basic_string_view<CharT, Bounds, Ex> lhs,
-		           std::basic_string<CharT, Traits, Allocator> const &rhs ) {
-			return lhs.compare( basic_string_view<CharT, Bounds>( rhs.data( ),
-			                                                      rhs.size( ) ) ) < 0;
-		}
-#endif
-		template<typename CharT, string_view_bounds_type Bounds, std::ptrdiff_t Ex>
-		[[nodiscard]] constexpr bool
-		operator<( basic_string_view<CharT, Bounds, Ex> lhs, CharT const *rhs ) {
-			return lhs.compare( basic_string_view<CharT, Bounds>( rhs ) ) < 0;
-		}
-#ifndef NOSTRING
-		template<typename CharT, typename Traits, string_view_bounds_type Bounds,
-		         std::ptrdiff_t Ex>
-		[[nodiscard]] constexpr bool
-		operator<( std::basic_string<CharT, Traits> const &lhs,
-		           basic_string_view<CharT, Bounds, Ex> rhs ) {
-			return basic_string_view<CharT, Bounds>( lhs.data( ), lhs.size( ) )
-			         .compare( rhs ) < 0;
-		}
-#endif
-		template<typename CharT, string_view_bounds_type Bounds, std::ptrdiff_t Ex>
-		[[nodiscard]] constexpr bool
-		operator<( CharT const *lhs, basic_string_view<CharT, Bounds, Ex> rhs ) {
-			return basic_string_view<CharT, Bounds>( lhs ).compare( rhs ) < 0;
-		}
-
-		template<typename CharT, string_view_bounds_type BL, std::ptrdiff_t ExL,
-		         string_view_bounds_type BR, std::ptrdiff_t ExR>
-		[[nodiscard]] constexpr bool
-		operator<=( basic_string_view<CharT, BL, ExL> lhs,
-		            basic_string_view<CharT, BR, ExR> rhs ) {
-			return lhs.compare( rhs ) <= 0;
-		}
-
-#ifndef NOSTRING
-		template<typename CharT, string_view_bounds_type Bounds, std::ptrdiff_t Ex,
-		         typename Traits, typename Allocator>
-		[[nodiscard]] constexpr bool
-		operator<=( basic_string_view<CharT, Bounds, Ex> lhs,
-		            std::basic_string<CharT, Traits, Allocator> const &rhs ) {
-			return lhs.compare( basic_string_view<CharT, Bounds>(
-			         rhs.data( ), rhs.size( ) ) ) <= 0;
-		}
-#endif
-		template<typename CharT, string_view_bounds_type Bounds, std::ptrdiff_t Ex>
-		[[nodiscard]] constexpr bool
-		operator<=( basic_string_view<CharT, Bounds, Ex> lhs, CharT const *rhs ) {
-			return lhs.compare( basic_string_view<CharT, Bounds>( rhs ) ) <= 0;
-		}
-#ifndef NOSTRING
-		template<typename CharT, typename Traits, string_view_bounds_type Bounds,
-		         std::ptrdiff_t Ex>
-		[[nodiscard]] constexpr bool
-		operator<=( std::basic_string<CharT, Traits> const &lhs,
-		            basic_string_view<CharT, Bounds, Ex> rhs ) {
-			return basic_string_view<CharT, Bounds>( lhs.data( ), lhs.size( ) )
-			         .compare( rhs ) <= 0;
-		}
-#endif
-		template<typename CharT, string_view_bounds_type Bounds, std::ptrdiff_t Ex>
-		[[nodiscard]] constexpr bool
-		operator<=( CharT const *lhs, basic_string_view<CharT, Bounds, Ex> rhs ) {
-			return basic_string_view<CharT, Bounds>( lhs ).compare( rhs ) <= 0;
-		}
-
-		template<typename CharT, string_view_bounds_type BL, std::ptrdiff_t ExL,
-		         string_view_bounds_type BR, std::ptrdiff_t ExR>
-		[[nodiscard]] constexpr bool
-		operator>( basic_string_view<CharT, BL, ExL> lhs,
-		           basic_string_view<CharT, BR, ExR> rhs ) {
-			return lhs.compare( rhs ) > 0;
-		}
-
-#ifndef NOSTRING
-		template<typename CharT, string_view_bounds_type Bounds, std::ptrdiff_t Ex,
-		         typename Traits, typename Allocator>
-		[[nodiscard]] constexpr bool
-		operator>( basic_string_view<CharT, Bounds, Ex> lhs,
-		           std::basic_string<CharT, Traits, Allocator> const &rhs ) {
-			return lhs.compare( basic_string_view<CharT, Bounds>( rhs.data( ),
-			                                                      rhs.size( ) ) ) > 0;
-		}
-#endif
-		template<typename CharT, string_view_bounds_type Bounds, std::ptrdiff_t Ex>
-		[[nodiscard]] constexpr bool
-		operator>( basic_string_view<CharT, Bounds, Ex> lhs, CharT const *rhs ) {
-			return lhs.compare( basic_string_view<CharT, Bounds>( rhs ) ) > 0;
-		}
-#ifndef NOSTRING
-		template<typename CharT, typename Traits, string_view_bounds_type Bounds,
-		         std::ptrdiff_t Ex>
-		[[nodiscard]] constexpr bool
-		operator>( std::basic_string<CharT, Traits> const &lhs,
-		           basic_string_view<CharT, Bounds, Ex> rhs ) {
-			return basic_string_view<CharT, Bounds>( lhs.data( ), lhs.size( ) )
-			         .compare( rhs ) > 0;
-		}
-#endif
-		template<typename CharT, string_view_bounds_type Bounds, std::ptrdiff_t Ex>
-		[[nodiscard]] constexpr bool
-		operator>( CharT const *lhs, basic_string_view<CharT, Bounds, Ex> rhs ) {
-			return basic_string_view<CharT, Bounds>( lhs ).compare( rhs ) > 0;
-		}
-
-		template<typename CharT, string_view_bounds_type BL, std::ptrdiff_t ExL,
-		         string_view_bounds_type BR, std::ptrdiff_t ExR>
-		[[nodiscard]] constexpr bool
-		operator>=( basic_string_view<CharT, BL, ExL> lhs,
-		            basic_string_view<CharT, BR, ExR> rhs ) {
-			return lhs.compare( rhs ) >= 0;
-		}
-
-#ifndef NOSTRING
-		template<typename CharT, string_view_bounds_type Bounds, std::ptrdiff_t Ex,
-		         typename Traits, typename Allocator>
-		[[nodiscard]] constexpr bool
-		operator>=( basic_string_view<CharT, Bounds, Ex> lhs,
-		            std::basic_string<CharT, Traits, Allocator> const &rhs ) {
-			return lhs.compare( basic_string_view<CharT, Bounds>(
-			         rhs.data( ), rhs.size( ) ) ) >= 0;
-		}
-#endif
-		template<typename CharT, string_view_bounds_type Bounds, std::ptrdiff_t Ex>
-		[[nodiscard]] constexpr bool
-		operator>=( basic_string_view<CharT, Bounds, Ex> lhs, CharT const *rhs ) {
-			return lhs.compare( basic_string_view<CharT, Bounds>( rhs ) ) >= 0;
-		}
-#ifndef NOSTRING
-		template<typename CharT, typename Traits, string_view_bounds_type Bounds,
-		         std::ptrdiff_t Ex>
-		[[nodiscard]] constexpr bool
-		operator>=( std::basic_string<CharT, Traits> const &lhs,
-		            basic_string_view<CharT, Bounds, Ex> rhs ) {
-			return basic_string_view<CharT, Bounds>( lhs.data( ), lhs.size( ) )
-			         .compare( rhs ) >= 0;
-		}
-#endif
-		template<typename CharT, string_view_bounds_type Bounds, std::ptrdiff_t Ex>
-		[[nodiscard]] constexpr bool
-		operator>=( CharT const *lhs, basic_string_view<CharT, Bounds, Ex> rhs ) {
-			return basic_string_view<CharT, Bounds>( lhs ).compare( rhs ) >= 0;
-		}
-
-#ifndef NOSTRING
-		template<typename CharT, typename Traits, typename Allocator,
-		         string_view_bounds_type Bounds, std::ptrdiff_t Ex>
-		[[nodiscard]] auto
-		operator+( std::basic_string<CharT, Traits, Allocator> lhs,
-		           daw::sv2::basic_string_view<CharT, Bounds, Ex> rhs ) {
-			lhs.reserve( lhs.size( ) + rhs.size( ) );
-			daw::algorithm::copy( rhs.begin( ), rhs.end( ),
-			                      std::back_inserter( lhs ) );
-			return lhs;
-		}
-
-		template<typename CharT, string_view_bounds_type Bounds, std::ptrdiff_t Ex,
-		         std::size_t N>
-		[[nodiscard]] auto
-		operator+( CharT ( &lhs )[N],
-		           daw::sv2::basic_string_view<CharT, Bounds, Ex> rhs ) {
-			static_assert( N > 0 );
-			std::basic_string<CharT> result;
-			result.reserve( ( N - 1 ) + rhs.size( ) );
-			auto dest = std::back_inserter( result );
-			daw::algorithm::copy_n( lhs, dest, N - 1 );
-			daw::algorithm::copy( rhs.begin( ), rhs.end( ), dest );
-			return result;
-		}
-
-		template<typename CharT, string_view_bounds_type Bounds, std::ptrdiff_t Ex>
-		[[nodiscard]] auto
-		operator+( CharT const *lhs,
-		           daw::sv2::basic_string_view<CharT, Bounds, Ex> rhs ) {
-			std::size_t const lhs_len = details::strlen<std::size_t>( lhs );
-			std::basic_string<CharT> result;
-			result.reserve( lhs_len + rhs.size( ) );
-			auto dest = std::back_inserter( result );
-			daw::algorithm::copy_n( lhs, dest, lhs_len );
-			daw::algorithm::copy( rhs.begin( ), rhs.end( ), dest );
-			return result;
-		}
-
-		template<typename CharT, string_view_bounds_type Bounds, std::ptrdiff_t Ex,
-		         typename Traits, typename Allocator>
-		[[nodiscard]] auto
-		operator+( daw::sv2::basic_string_view<CharT, Bounds, Ex> lhs,
-		           std::basic_string<CharT, Traits, Allocator> const &rhs ) {
-			std::basic_string<CharT, Traits, Allocator> result;
-			result.reserve( lhs.size( ) + rhs.size( ) );
-			daw::algorithm::copy( lhs.begin( ), lhs.end( ),
-			                      std::back_inserter( result ) );
-			result += rhs;
-			return result;
-		}
-
-		template<typename CharT, string_view_bounds_type Bounds, std::ptrdiff_t Ex,
-		         std::size_t N>
-		[[nodiscard]] auto
-		operator+( daw::sv2::basic_string_view<CharT, Bounds, Ex> lhs,
-		           CharT ( &rhs )[N] ) {
-			static_assert( N > 0 );
-			std::basic_string<CharT> result;
-			result.reserve( lhs.size( ) + ( N - 1 ) );
-			auto dest = std::back_inserter( result );
-			daw::algorithm::copy( lhs.begin( ), lhs.end( ), dest );
-			daw::algorithm::copy_n( rhs, dest, N - 1 );
-			return result;
-		}
-
-		template<typename CharT, string_view_bounds_type Bounds, std::ptrdiff_t Ex>
-		[[nodiscard]] auto
-		operator+( daw::sv2::basic_string_view<CharT, Bounds, Ex> lhs,
-		           CharT const *rhs ) {
-			std::size_t const rhs_len = details::strlen<std::size_t>( rhs );
-			std::basic_string<CharT> result;
-			result.reserve( lhs.size( ) + rhs_len );
-			auto dest = std::back_inserter( result );
-			daw::algorithm::copy( lhs.begin( ), lhs.end( ), dest );
-			daw::algorithm::copy_n( rhs, dest, rhs_len );
-			return result;
-		}
-#endif
 
 		namespace string_view_literals {
 			[[nodiscard]] constexpr string_view
@@ -1539,16 +1256,6 @@ namespace daw {
 		generic_hash( daw::sv2::basic_string_view<CharT, Bounds, Extent> sv ) {
 			return generic_hash<HashSize>( sv.data( ), sv.size( ) );
 		}
-
-#ifndef NOSTRING
-		template<typename CharT, typename Traits = std::char_traits<CharT>,
-		         typename Allocator = std::allocator<CharT>,
-		         string_view_bounds_type Bounds, std::ptrdiff_t Ex>
-		[[nodiscard]] std::basic_string<CharT, Traits, Allocator>
-		to_string( daw::sv2::basic_string_view<CharT, Bounds, Ex> sv ) {
-			return { sv.begin( ), sv.end( ) };
-		}
-#endif
 	} // namespace sv2
 } // namespace daw
 

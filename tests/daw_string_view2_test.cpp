@@ -16,7 +16,7 @@
 #include <cstdlib>
 #include <iostream>
 #include <iterator>
-#ifndef NOSTRING
+#ifndef DAW_SV_NOSTDSTRING
 #include <string>
 #endif
 #include <stdexcept>
@@ -67,31 +67,7 @@ namespace daw {
 		daw::expecting( result == tmp_e::a );
 	}
 
-#ifndef HASNOSTRING
-	void daw_string_view_make_string_view_it( ) {
-		std::string a = "This is a test";
-		auto b = daw::sv2::make_string_view_it( a.begin( ), a.end( ) );
-
-		daw::expecting_message(
-		  std::equal( a.begin( ), a.end( ), b.begin( ), b.end( ) ),
-		  "string and string_view should be equal" );
-	}
-
-	void daw_string_view_make_string_view_vector( ) {
-		std::string a = "This is a test";
-		std::vector<char> b;
-		std::copy( a.begin( ), a.end( ), std::back_inserter( b ) );
-
-		auto c = daw::sv2::make_string_view( b );
-
-		daw::expecting_message(
-		  std::equal( a.begin( ), a.end( ), b.begin( ), b.end( ) ),
-		  "string and vector should be equal" );
-		daw::expecting_message(
-		  std::equal( c.begin( ), c.end( ), b.begin( ), b.end( ) ),
-		  "string_view and vector should be equal" );
-	}
-
+#ifndef DAW_NO_STDSTRING
 	void daw_string_view_find_last_of_001( ) {
 		auto a = daw::sv2::string_view( "abcdefghijklm" );
 		std::string const b = "abcdefghijklm";
@@ -104,15 +80,6 @@ namespace daw {
 		daw::expecting( es, es2 );
 	}
 #endif
-
-	void daw_string_view_make_test_001( ) {
-		unsigned char const p[] = { 'H', 'e', 'l', 'l', 'o', 0 };
-		auto sv =
-		  daw::sv2::make_string_view_it( reinterpret_cast<char const *>( p ),
-		                                 reinterpret_cast<char const *>( p ) + 5 );
-		daw::sv2::string_view p2 = "Hello";
-		daw::expecting( sv, p2 );
-	}
 
 	void daw_string_view_find_first_of_if_001( ) {
 		daw::sv2::string_view const a = "abcdefghijklm";
@@ -172,7 +139,7 @@ namespace daw {
 
 	//----------------------------------------------------------------------------
 
-#ifndef NOSTRING
+#ifndef DAW_SV_NOSTDSTRING
 	void tc002( ) {
 		std::string str = "Hello world";
 		daw::sv2::string_view view = str;
@@ -423,11 +390,11 @@ namespace daw {
 	//----------------------------------------------------------------------------
 	// String Operations
 	//----------------------------------------------------------------------------
-#ifndef NOSTRING
+#ifndef DAW_SV_NOSTDSTRING
 	void tc016conversion( ) {
 		daw::sv2::string_view view = "Hello World";
 
-		std::string string = view.to_string( );
+		std::string string = view;
 
 		puts( "Copies view to new location in std::string" );
 		{ daw::expecting( view.data( ) != string.data( ) ); }
@@ -635,7 +602,7 @@ namespace daw {
 				const char *str = "Hello World";
 				daw::expecting( view == str );
 			}
-#ifndef NOSTRING
+#ifndef DAW_SV_NOSTDSTRING
 			puts( "Returns true for equal strings with left std::string" );
 			{
 				std::string str = "Hello World";
@@ -677,7 +644,7 @@ namespace daw {
 				daw::expecting( FALSE( view == str ) );
 			}
 
-#ifndef NOSTRING
+#ifndef DAW_SV_NOSTDSTRING
 			puts( "Returns false for non-equal strings with left std::string" );
 			{
 				std::string str = "Goodbye World";
@@ -742,7 +709,7 @@ namespace daw {
 				daw::expecting( FALSE( view != str ) );
 			}
 
-#ifndef NOSTRING
+#ifndef DAW_SV_NOSTDSTRING
 			puts( "Returns false for equal strings with left std::string" );
 			{
 				std::string str = "Hello World";
@@ -784,7 +751,7 @@ namespace daw {
 				daw::expecting( view != str );
 			}
 
-#ifndef NOSTRING
+#ifndef DAW_SV_NOSTDSTRING
 			puts( "Returns true for non-equal strings with left std::string" );
 			{
 				std::string str = "Goodbye World";
@@ -860,7 +827,7 @@ namespace daw {
 		  !daw::sv2::string_view{ "This is a test" }.ends_with( 'a' ) );
 	}
 
-#ifndef NOSTRING
+#ifndef DAW_SV_NOSTDSTRING
 	void daw_pop_front_sv_test_001( ) {
 		std::string str = "This is a test";
 		daw::sv2::string_view sv{ str.data( ), str.size( ) };
@@ -988,10 +955,7 @@ namespace daw {
 int main( ) {
 	daw::expecting( daw::ensure_same_at_ct( ) );
 	daw::daw_string_view_contexpr_001( );
-	daw::daw_string_view_make_string_view_it( );
-	daw::daw_string_view_make_string_view_vector( );
 	daw::daw_string_view_find_last_of_001( );
-	daw::daw_string_view_make_test_001( );
 	daw::daw_string_view_find_first_of_if_001( );
 	daw::daw_string_view_find_first_not_of_if_001( );
 	daw::daw_string_view_find_first_of_001( );

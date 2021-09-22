@@ -10,8 +10,6 @@
 
 #include <ciso646>
 #include <cstddef>
-#include <cstdint>
-#include <string>
 
 namespace daw {
 	namespace sv2 {
@@ -30,7 +28,7 @@ namespace daw {
 		template<typename CharT,
 		         string_view_bounds_type BoundsType =
 		           default_string_view_bounds_type,
-		         ptrdiff_t Extent = dynamic_string_view_size>
+		         std::ptrdiff_t Extent = dynamic_string_view_size>
 		struct basic_string_view;
 
 		using string_view = basic_string_view<char>;
