@@ -10,7 +10,6 @@
 #include <daw/daw_string_view2.h>
 #include <daw/daw_utility.h>
 
-#include <algorithm>
 #include <cctype>
 #include <cstdio>
 #include <cstdlib>
@@ -20,7 +19,6 @@
 #include <string>
 #endif
 #include <stdexcept>
-#include <vector>
 
 #define FALSE( b ) ( !( b ) )
 namespace daw {
@@ -380,7 +378,7 @@ namespace daw {
 
 		puts( "Swaps entries" );
 		{
-			view1.swap( view2 );
+			std::swap( view1, view2 );
 
 			daw::expecting(
 			  ( ( view1.data( ) == str2 ) && ( view2.data( ) == str1 ) ) );
@@ -831,10 +829,10 @@ namespace daw {
 	void daw_pop_front_sv_test_001( ) {
 		std::string str = "This is a test";
 		daw::sv2::string_view sv{ str.data( ), str.size( ) };
-		daw::expecting( sv.pop_front( " " ), "This" );
-		daw::expecting( sv.pop_front( " " ), "is" );
-		daw::expecting( sv.pop_front( " " ), "a" );
-		daw::expecting( sv.pop_front( " " ), "test" );
+		daw::expecting( sv.pop_front_until( " " ), "This" );
+		daw::expecting( sv.pop_front_until( " " ), "is" );
+		daw::expecting( sv.pop_front_until( " " ), "a" );
+		daw::expecting( sv.pop_front_until( " " ), "test" );
 		daw::expecting( sv.empty( ) );
 	}
 
@@ -849,17 +847,17 @@ namespace daw {
 	void daw_pop_back_sv_test_001( ) {
 		std::string str = "This is a test";
 		daw::sv2::string_view sv{ str.data( ), str.size( ) };
-		daw::expecting( sv.pop_back( " " ), "test" );
-		daw::expecting( sv.pop_back( " " ), "a" );
-		daw::expecting( sv.pop_back( " " ), "is" );
-		daw::expecting( sv.pop_back( " " ), "This" );
+		daw::expecting( sv.pop_back_until( " " ), "test" );
+		daw::expecting( sv.pop_back_until( " " ), "a" );
+		daw::expecting( sv.pop_back_until( " " ), "is" );
+		daw::expecting( sv.pop_back_until( " " ), "This" );
 		daw::expecting( sv.empty( ) );
 	}
 
 	void daw_pop_front_pred_test_001( ) {
 		std::string str = "This is1a test";
 		daw::sv2::string_view sv{ str.data( ), str.size( ) };
-		auto lhs = sv.pop_front( []( auto c ) { return std::isdigit( c ); } );
+		auto lhs = sv.pop_front_until( []( auto c ) { return std::isdigit( c ); } );
 		daw::expecting( lhs, "This is" );
 		daw::expecting( sv, "a test" );
 	}
@@ -867,43 +865,43 @@ namespace daw {
 	void daw_pop_back_pred_test_001( ) {
 		std::string str = "This is1a test";
 		daw::sv2::string_view sv{ str.data( ), str.size( ) };
-		auto rhs = sv.pop_back( []( auto c ) { return std::isdigit( c ); } );
+		auto rhs = sv.pop_back_until( []( auto c ) { return std::isdigit( c ); } );
 		daw::expecting( sv, "This is" );
 		daw::expecting( rhs, "a test" );
 	}
 
-	void daw_try_pop_back_sv_test_001( ) {
+	void daw_try_pop_back_until_sv_test_001( ) {
 		std::string str = "This is a test";
 		daw::sv2::string_view sv{ str.data( ), str.size( ) };
-		daw::expecting( sv.try_pop_back( " " ), "test" );
-		daw::expecting( sv.try_pop_back( " " ), "a" );
-		daw::expecting( sv.try_pop_back( " " ), "is" );
-		daw::expecting( sv.try_pop_back( " " ), "" );
+		daw::expecting( sv.try_pop_back_until( " " ), "test" );
+		daw::expecting( sv.try_pop_back_until( " " ), "a" );
+		daw::expecting( sv.try_pop_back_until( " " ), "is" );
+		daw::expecting( sv.try_pop_back_until( " " ), "" );
 		daw::expecting( sv, "This" );
 	}
 
-	void daw_try_pop_back_sv_test_002( ) {
+	void daw_try_pop_back_until_sv_test_002( ) {
 		std::string str = "This is a test";
 		daw::sv2::string_view sv{ str.data( ), str.size( ) };
-		auto result = sv.try_pop_back( "blah" );
+		auto result = sv.try_pop_back_until( "blah" );
 		daw::expecting( result.empty( ) );
 		daw::expecting( sv == str );
 	}
 
-	void daw_try_pop_front_sv_test_001( ) {
+	void daw_try_pop_front_until_sv_test_001( ) {
 		std::string str = "This is a test";
 		daw::sv2::string_view sv{ str.data( ), str.size( ) };
-		daw::expecting( sv.try_pop_front( " " ), "This" );
-		daw::expecting( sv.try_pop_front( " " ), "is" );
-		daw::expecting( sv.try_pop_front( " " ), "a" );
-		daw::expecting( sv.try_pop_front( " " ) != "test" );
+		daw::expecting( sv.try_pop_front_until( " " ), "This" );
+		daw::expecting( sv.try_pop_front_until( " " ), "is" );
+		daw::expecting( sv.try_pop_front_until( " " ), "a" );
+		daw::expecting( sv.try_pop_front_until( " " ) != "test" );
 		daw::expecting( sv, "test" );
 	}
 
-	void daw_try_pop_front_sv_test_002( ) {
+	void daw_try_pop_front_until_sv_test_002( ) {
 		std::string str = "This is a test";
 		daw::sv2::string_view sv{ str.data( ), str.size( ) };
-		auto result = sv.try_pop_front( "blah" );
+		auto result = sv.try_pop_front_until( "blah" );
 		daw::expecting( result.empty( ) );
 		daw::expecting( sv == str );
 		daw::sv2::string_view s{ };
@@ -1003,8 +1001,8 @@ int main( ) {
 	daw::daw_pop_back_sv_test_001( );
 	daw::daw_pop_front_pred_test_001( );
 	daw::daw_pop_back_pred_test_001( );
-	daw::daw_try_pop_back_sv_test_001( );
-	daw::daw_try_pop_back_sv_test_002( );
-	daw::daw_try_pop_front_sv_test_001( );
-	daw::daw_try_pop_front_sv_test_002( );
+	daw::daw_try_pop_back_until_sv_test_001( );
+	daw::daw_try_pop_back_until_sv_test_002( );
+	daw::daw_try_pop_front_until_sv_test_001( );
+	daw::daw_try_pop_front_until_sv_test_002( );
 }

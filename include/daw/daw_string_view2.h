@@ -402,7 +402,7 @@ namespace daw {
 			/// @param where string to split on and remove from front
 			/// @return substring from beginning to where string
 			[[nodiscard]] constexpr basic_string_view
-			pop_front( basic_string_view where ) {
+			pop_front_until( basic_string_view where ) {
 				auto pos = find( where );
 				auto result = pop_front( pos );
 				remove_prefix( where.size( ) );
@@ -420,7 +420,7 @@ namespace daw {
 			  std::enable_if_t<traits::is_unary_predicate_v<UnaryPredicate, CharT>,
 			                   std::nullptr_t> = nullptr>
 			[[nodiscard]] constexpr basic_string_view
-			pop_front( UnaryPredicate pred ) {
+			pop_front_until( UnaryPredicate pred ) {
 
 				auto pos = find_first_of_if( daw::move( pred ) );
 				auto result = pop_front( pos );
@@ -450,7 +450,7 @@ namespace daw {
 			/// @param where string to split on and remove from back
 			/// @return substring from end of where string to end of string
 			[[nodiscard]] constexpr basic_string_view
-			pop_back( basic_string_view where ) {
+			pop_back_until( basic_string_view where ) {
 				auto pos = rfind( where );
 				if( pos == npos ) {
 					auto result{ *this };
@@ -474,7 +474,7 @@ namespace daw {
 			  std::enable_if_t<traits::is_unary_predicate_v<UnaryPredicate, CharT>,
 			                   std::nullptr_t> = nullptr>
 			[[nodiscard]] constexpr basic_string_view
-			pop_back( UnaryPredicate pred ) {
+			pop_back_until( UnaryPredicate pred ) {
 
 				auto pos = find_last_of_if( daw::move( pred ) );
 				if( pos == npos ) {
@@ -494,7 +494,7 @@ namespace daw {
 			/// @param where string to split on and remove from front
 			/// @return substring from beginning to where string
 			[[nodiscard]] constexpr basic_string_view
-			try_pop_front( basic_string_view where ) {
+			try_pop_front_until( basic_string_view where ) {
 				auto pos = find( where );
 				if( pos == npos ) {
 					return basic_string_view<CharT, BoundsType>( );
@@ -510,7 +510,7 @@ namespace daw {
 			/// @param where string to split on and remove from back
 			/// @return substring from end of where string to end of string
 			[[nodiscard]] constexpr basic_string_view
-			try_pop_back( basic_string_view where ) {
+			try_pop_back_until( basic_string_view where ) {
 				auto pos = rfind( where );
 				if( pos == npos ) {
 					return basic_string_view<CharT, BoundsType>( );
@@ -525,7 +525,7 @@ namespace daw {
 			/// @param where string to find and consume
 			/// @return substring with everything up until the end of where removed
 			[[nodiscard]] constexpr basic_string_view &
-			consume_front( basic_string_view where ) {
+			remove_prefix_until( basic_string_view where ) {
 				auto pos = find( where );
 				remove_prefix( pos );
 				remove_prefix( where.size( ) );
@@ -535,11 +535,6 @@ namespace daw {
 			constexpr void resize( std::size_t const n ) {
 				daw::exception::precondition_check<std::out_of_range>( n < size( ) );
 				m_last = std::next( m_first, static_cast<ptrdiff_t>( n ) );
-			}
-
-			constexpr void swap( basic_string_view &v ) {
-				daw::cswap( m_first, v.m_first );
-				daw::cswap( m_last, v.m_last );
 			}
 
 			size_type copy( CharT *dest, size_type const count,
@@ -601,17 +596,9 @@ namespace daw {
 				return cmp;
 			}
 
-			template<string_view_bounds_type Bounds, std::ptrdiff_t Ex,
-			         std::enable_if_t<( not std::is_same_v<BoundsType, Bounds> or
-			                            ( Ex != Extent ) ),
-			                          std::nullptr_t> = nullptr>
+			template<string_view_bounds_type Bounds, std::ptrdiff_t Ex>
 			[[nodiscard]] constexpr int
 			compare( basic_string_view<CharT, Bounds, Ex> const rhs ) const {
-				basic_string_view lhs = *this;
-				return compare( lhs, rhs );
-			}
-
-			[[nodiscard]] constexpr int compare( basic_string_view const rhs ) const {
 				basic_string_view lhs = *this;
 				return compare( lhs, rhs );
 			}
@@ -1216,11 +1203,6 @@ namespace daw {
 		  -> basic_string_view<CharT, default_string_view_bounds_type, N - 1>;
 		//
 		//
-		template<typename CharT, string_view_bounds_type Bounds, std::ptrdiff_t Ex>
-		constexpr void swap( basic_string_view<CharT, Bounds, Ex> &lhs,
-		                     basic_string_view<CharT, Bounds, Ex> &rhs ) {
-			lhs.swap( rhs );
-		}
 
 		namespace string_view_literals {
 			[[nodiscard]] constexpr string_view
@@ -1260,8 +1242,6 @@ namespace daw {
 } // namespace daw
 
 namespace std {
-	// TODO use same function as string without killing performance of creating
-	// a string
 	template<typename CharT, daw::sv2::string_view_bounds_type Bounds,
 	         std::ptrdiff_t Ex>
 	struct hash<daw::sv2::basic_string_view<CharT, Bounds, Ex>> {
