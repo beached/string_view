@@ -104,9 +104,35 @@ namespace daw {
 	}
 
 	void daw_string_view_find_last_not_of_001( ) {
-		daw::sv2::string_view const a = "abcabfghijklm";
-		auto pos = a.find_last_not_of( "abc" );
-		daw::expecting( 3U, pos );
+		std::string const str = "abcabfghijklm";
+		daw::sv2::string_view const sv = "abcabfghijklm";
+		auto pos = str.find_last_not_of( "abc" );
+		auto pos_sv = sv.find_last_not_of( "abc" );
+		daw::expecting( pos, pos_sv );
+	}
+
+	void daw_string_view_find_last_not_of_002( ) {
+		std::string_view const str = "abcabfghijklmabc";
+		daw::sv2::string_view const sv = str;
+
+		for( std::size_t n = 0; n < sv.size( ); ++n ) {
+			auto pos = str.find_last_not_of( "abc", n );
+			auto pos_sv = sv.find_last_not_of( "abc", n );
+			daw::expecting( pos, pos_sv );
+		}
+	}
+	void daw_string_view_find_last_not_of_if_001( ) {
+		daw::sv2::string_view const sv = "abcabf ghijklm     \n";
+		auto pos_sv =
+		  sv.find_last_not_of_if( []( char c ) { return std::isspace( c ) != 0; } );
+		daw::expecting( 13, pos_sv );
+	}
+
+	void daw_string_view_find_last_not_of_if_002( ) {
+		daw::sv2::string_view const sv = "abcabf ghijklm     \n";
+		auto pos_sv = sv.find_last_not_of_if(
+		  []( char c ) { return std::isspace( c ) != 0; }, 6 );
+		daw::expecting( 5, pos_sv );
 	}
 
 	void daw_string_view_search_001( ) {
@@ -826,7 +852,7 @@ namespace daw {
 	}
 
 #ifndef DAW_SV_NOSTDSTRING
-	void daw_pop_front_sv_test_001( ) {
+	void daw_pop_front_until_sv_test_001( ) {
 		std::string str = "This is a test";
 		auto sv = daw::sv2::string_view( str.data( ), str.size( ) );
 		using namespace daw::sv2::string_view_literals;
@@ -835,6 +861,18 @@ namespace daw {
 		daw::expecting( "a"_sv, sv.pop_front_until( " " ) );
 		daw::expecting( "test"_sv, sv.pop_front_until( " " ) );
 		daw::expecting( sv.empty( ) );
+	}
+
+	void daw_pop_front_test_001( ) {
+		daw::sv2::string_view sv = "This is a test";
+		auto result = sv.pop_front( );
+		daw::expecting( result, 'T' );
+	}
+
+	void daw_pop_front_count_test_001( ) {
+		daw::sv2::string_view sv = "This is a test";
+		auto result = sv.pop_front( 4 );
+		daw::expecting( result, "This" );
 	}
 
 	void daw_pop_back_count_test_001( ) {
@@ -961,6 +999,9 @@ int main( ) {
 	daw::daw_string_view_find_first_of_001( );
 	daw::daw_string_view_find_first_not_of_001( );
 	daw::daw_string_view_find_last_not_of_001( );
+	daw::daw_string_view_find_last_not_of_002( );
+	daw::daw_string_view_find_last_not_of_if_001( );
+	daw::daw_string_view_find_last_not_of_if_002( );
 	daw::daw_string_view_search_001( );
 	daw::daw_string_view_search_last_001( );
 	daw::tc001( );
@@ -998,7 +1039,9 @@ int main( ) {
 	daw::daw_can_be_string_view_ends_with_004( );
 	daw::daw_can_be_string_view_ends_with_005( );
 	daw::daw_can_be_string_view_ends_with_006( );
-	daw::daw_pop_front_sv_test_001( );
+	daw::daw_pop_front_test_001( );
+	daw::daw_pop_front_count_test_001( );
+	daw::daw_pop_front_until_sv_test_001( );
 	daw::daw_pop_back_count_test_001( );
 	daw::daw_pop_back_sv_test_001( );
 	daw::daw_pop_front_pred_test_001( );

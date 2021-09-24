@@ -1163,23 +1163,58 @@ namespace daw {
 				                          0 );
 			}
 
+			template<
+			  typename UnaryPredicate,
+			  std::enable_if_t<traits::is_unary_predicate_v<UnaryPredicate, CharT>,
+			                   std::nullptr_t> = nullptr>
+			[[nodiscard]] constexpr size_type
+			find_last_not_of_if( UnaryPredicate pred, size_type pos ) const {
+
+				if( empty( ) ) {
+					return npos;
+				}
+				if( pos > size( ) ) {
+					pos = size( ) - 1;
+				}
+				for( std::ptrdiff_t n = static_cast<std::ptrdiff_t>( pos ); n >= 0;
+				     --n ) {
+					if( not pred( m_first[n] ) ) {
+						return n;
+					}
+				}
+				return npos;
+			}
+
+			template<
+			  typename UnaryPredicate,
+			  std::enable_if_t<traits::is_unary_predicate_v<UnaryPredicate, CharT>,
+			                   std::nullptr_t> = nullptr>
+			[[nodiscard]] constexpr size_type
+			find_last_not_of_if( UnaryPredicate pred ) const {
+				return find_last_not_of_if( pred, npos );
+			}
+
 			template<string_view_bounds_type Bounds, std::ptrdiff_t Ex>
 			[[nodiscard]] constexpr size_type
 			find_last_not_of( basic_string_view<CharT, Bounds, Ex> v,
 			                  size_type pos ) const {
-				if( pos >= size( ) ) {
+
+				if( empty( ) ) {
+					return npos;
+				}
+				if( pos > size( ) ) {
 					pos = size( ) - 1;
 				}
 				if( v.empty( ) ) {
-					return pos;
+					return pos - 1;
 				}
-				pos = size( ) - ( pos + 1U );
-				const_reverse_iterator iter =
-				  find_not_of( rbegin( ) + static_cast<intmax_t>( pos ), rend( ), v );
-				if( rend( ) == iter ) {
-					return npos;
+				for( std::ptrdiff_t n = static_cast<std::ptrdiff_t>( pos ); n >= 0;
+				     --n ) {
+					if( v.find( m_first[n] ) == npos ) {
+						return n;
+					}
 				}
-				return reverse_distance( rbegin( ), iter );
+				return npos;
 			}
 
 			template<string_view_bounds_type Bounds, std::ptrdiff_t Ex>
