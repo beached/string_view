@@ -340,6 +340,7 @@ namespace daw {
 	//----------------------------------------------------------------------------
 
 	void tc010accessor( ) {
+#if defined( DAW_USE_EXCEPTIONS )
 		const char *str = "Hello World";
 		daw::sv2::string_view view = str;
 
@@ -356,6 +357,7 @@ namespace daw {
 			puts( "Expected out of range exception" );
 			std::abort( );
 		}
+#endif
 	}
 
 	//----------------------------------------------------------------------------
@@ -455,6 +457,7 @@ namespace daw {
 	//----------------------------------------------------------------------------
 
 	void tc018operation( ) {
+#if defined( DAW_USE_EXCEPTIONS )
 		daw::sv2::string_view const view = "Hello World";
 
 		puts( "Throws std::out_of_range if pos >= view.size()" );
@@ -510,11 +513,13 @@ namespace daw {
 
 			daw::expecting( view.copy( result, 20 ) == 11 );
 		}
+#endif
 	}
 
 	//----------------------------------------------------------------------------
 
 	void tc019operation( ) {
+#if defined( DAW_USE_EXCEPTIONS )
 		daw::sv2::string_view view = "Hello World";
 
 		puts( "Returns the full string when given no args" );
@@ -553,6 +558,7 @@ namespace daw {
 			puts( "Expected out_of_range_exception" );
 			std::abort( );
 		}
+#endif
 	}
 
 	//----------------------------------------------------------------------------
