@@ -33,6 +33,9 @@ namespace daw {
 
 		using string_view = basic_string_view<char>;
 		using wstring_view = basic_string_view<wchar_t>;
+#if defined( __cpp_char8_t )
+		using u8string_view = basic_string_view<char8_t>;
+#endif
 		using u16string_view = basic_string_view<char16_t>;
 		using u32string_view = basic_string_view<char32_t>;
 	} // namespace sv2

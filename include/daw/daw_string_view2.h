@@ -1473,22 +1473,29 @@ namespace daw {
 		namespace string_view_literals {
 			[[nodiscard]] constexpr string_view
 			operator"" _sv( char const *str, std::size_t len ) noexcept {
-				return daw::sv2::string_view{ str, len };
+				return string_view{ str, len };
 			}
+
+#if defined( __cpp_char8_t )
+			[[nodiscard]] constexpr u8string_view
+			operator"" _sv( char8_t const *str, std::size_t len ) noexcept {
+				return u8string_view{ str, len };
+			}
+#endif
 
 			[[nodiscard]] constexpr u16string_view
 			operator"" _sv( char16_t const *str, std::size_t len ) noexcept {
-				return daw::sv2::u16string_view{ str, len };
+				return u16string_view{ str, len };
 			}
 
 			[[nodiscard]] constexpr u32string_view
 			operator"" _sv( char32_t const *str, std::size_t len ) noexcept {
-				return daw::sv2::u32string_view{ str, len };
+				return u32string_view{ str, len };
 			}
 
 			[[nodiscard]] constexpr wstring_view
 			operator"" _sv( wchar_t const *str, std::size_t len ) noexcept {
-				return daw::sv2::wstring_view{ str, len };
+				return wstring_view{ str, len };
 			}
 		} // namespace string_view_literals
 
