@@ -13,6 +13,8 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 #add_subdirectory(extern)
 #include(cmake/test_compiler_options.cmake)
 
+include(cmake/test_compiler_options.cmake)
+
 add_library(daw_test INTERFACE)
 
 

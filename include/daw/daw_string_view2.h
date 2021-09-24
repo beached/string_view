@@ -1176,10 +1176,10 @@ namespace daw {
 				if( pos > size( ) ) {
 					pos = size( ) - 1;
 				}
-				for( std::ptrdiff_t n = static_cast<std::ptrdiff_t>( pos ); n >= 0;
+				for( difference_type n = static_cast<difference_type>( pos ); n >= 0;
 				     --n ) {
 					if( not pred( m_first[n] ) ) {
-						return n;
+						return static_cast<size_type>( n );
 					}
 				}
 				return npos;
@@ -1208,10 +1208,10 @@ namespace daw {
 				if( v.empty( ) ) {
 					return pos - 1;
 				}
-				for( std::ptrdiff_t n = static_cast<std::ptrdiff_t>( pos ); n >= 0;
+				for( difference_type n = static_cast<difference_type>( pos ); n >= 0;
 				     --n ) {
 					if( v.find( m_first[n] ) == npos ) {
-						return n;
+						return static_cast<size_type>( n );
 					}
 				}
 				return npos;
