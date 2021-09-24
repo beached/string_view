@@ -442,7 +442,7 @@ namespace daw {
 	void tc016conversion( ) {
 		daw::sv2::string_view view = "Hello World";
 
-		std::string string = view;
+		std::string string = static_cast<std::string>( view );
 
 		puts( "Copies view to new location in std::string" );
 		{ daw::expecting( view.data( ) != string.data( ) ); }
@@ -843,18 +843,15 @@ namespace daw {
 	}
 
 	constexpr void daw_can_be_string_view_starts_with_007( ) {
-		daw::expecting(
-		  not daw::sv2::string_view{}.starts_with( 'a' ) );
+		daw::expecting( not daw::sv2::string_view{ }.starts_with( 'a' ) );
 	}
 
 	constexpr void daw_can_be_string_view_starts_with_008( ) {
-		daw::expecting(
-		  not daw::sv2::string_view{}.starts_with( " " ) );
+		daw::expecting( not daw::sv2::string_view{ }.starts_with( " " ) );
 	}
 
 	constexpr void daw_can_be_string_view_starts_with_009( ) {
-		daw::expecting(
-		  not daw::sv2::string_view{" "}.starts_with( "    " ) );
+		daw::expecting( not daw::sv2::string_view{ " " }.starts_with( "    " ) );
 	}
 
 	constexpr void daw_can_be_string_view_ends_with_001( ) {
@@ -1047,7 +1044,6 @@ namespace daw {
 
 #if not defined( _MSC_VER ) or defined( __clang__ )
 	constexpr void daw_diff_assignment_001( ) {
-		/*
 		daw::sv2::basic_string_view a = "This is a test";
 		daw::sv2::string_view b = "Hello";
 		daw::expecting_message( a != b, "Expected equal" );
@@ -1055,7 +1051,6 @@ namespace daw {
 		// Should have different types
 		b = a;
 		daw::expecting_message( a == b, "Expected equal" );
-		 */
 	}
 #endif
 
