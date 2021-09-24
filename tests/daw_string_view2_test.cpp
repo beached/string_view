@@ -17,6 +17,7 @@
 #include <stdexcept>
 #include <string>
 
+using namespace daw::sv2::string_view_literals;
 #define FALSE( b ) ( !( b ) )
 namespace daw {
 
@@ -97,16 +98,61 @@ namespace daw {
 		daw::expecting( 8U, pos );
 	}
 
+	constexpr void
+	daw_string_view_find_last_of_005( daw::sv2::string_view needle ) {
+		auto a = daw::sv2::string_view( "abcdefghijklm" );
+		auto const pos = a.find_last_of( needle );
+		daw::expecting( daw::sv2::string_view::npos, pos );
+	}
+
+	constexpr void
+	daw_string_view_find_last_of_006( daw::sv2::string_view needle ) {
+		auto a = daw::sv2::string_view( "abcdefghijklm" );
+		auto const pos = a.find_last_of( needle, 1000U );
+		daw::expecting( 0U, pos );
+	}
+
+	constexpr void
+	daw_string_view_find_last_of_007( daw::sv2::string_view needle ) {
+		auto a = daw::sv2::string_view( "abcdefghijklm" );
+		auto const pos = a.find_last_of( needle, a.size( ) - 1 );
+		daw::expecting( 0U, pos );
+	}
+
 	constexpr void daw_string_view_find_first_of_if_001( ) {
 		daw::sv2::string_view const a = "abcdefghijklm";
 		auto pos = a.find_first_of_if( []( auto c ) { return c == 'c'; } );
 		daw::expecting( 2U, pos );
 	}
 
+	constexpr void daw_string_view_find_first_of_if_002( ) {
+		daw::sv2::string_view const a = "abcdefghijklm";
+		auto pos = a.find_first_of_if( []( auto c ) { return c == 'c'; }, 1000 );
+		daw::expecting( daw::sv2::string_view::npos, pos );
+	}
+
+	constexpr void daw_string_view_find_first_of_if_003( ) {
+		daw::sv2::string_view const a = "abcdefghijklm";
+		auto pos = a.find_first_of_if( []( auto c ) { return c == 'x'; } );
+		daw::expecting( daw::sv2::string_view::npos, pos );
+	}
+
 	constexpr void daw_string_view_find_first_not_of_if_001( ) {
 		daw::sv2::string_view const a = "abcdefghijklm";
 		auto pos = a.find_first_not_of_if( []( auto c ) { return c < 'c'; } );
 		daw::expecting( 2U, pos );
+	}
+
+	constexpr void daw_string_view_find_first_not_of_if_002( ) {
+		daw::sv2::string_view const a = "";
+		auto pos = a.find_first_not_of_if( []( auto c ) { return c < 'c'; } );
+		daw::expecting( daw::sv2::string_view::npos, pos );
+	}
+
+	constexpr void daw_string_view_find_first_not_of_if_003( ) {
+		daw::sv2::string_view const a = "abcdefghijklm";
+		auto pos = a.find_first_not_of_if( []( auto c ) { return c < 'x'; } );
+		daw::expecting( daw::sv2::string_view::npos, pos );
 	}
 
 	constexpr void daw_string_view_find_first_of_001( ) {
@@ -182,6 +228,19 @@ namespace daw {
 		}
 	}
 
+	constexpr void daw_string_view_find_last_not_of_004( ) {
+		daw::sv2::string_view const sv{ };
+		auto pos = sv.find_last_not_of( "a" );
+		daw::expecting( daw::sv2::string_view::npos, pos );
+	}
+
+	constexpr void daw_string_view_find_last_not_of_005( ) {
+		daw::sv2::string_view const sv{ "dfsdfsdfsd" };
+		auto pos = sv.find_last_not_of( "" );
+		daw::expecting( 9U, pos );
+	}
+
+
 	constexpr void daw_string_view_find_last_not_of_if_001( ) {
 		daw::sv2::string_view const sv = "abcabf ghijklm     \n";
 		auto pos_sv =
@@ -196,16 +255,71 @@ namespace daw {
 		daw::expecting( 5U, pos_sv );
 	}
 
+	constexpr void daw_string_view_find_last_not_of_if_003( ) {
+		daw::sv2::string_view const sv = "";
+		auto pos_sv =
+		  sv.find_last_not_of_if( []( char c ) { return std::isspace( c ) != 0; } );
+		daw::expecting( daw::sv2::string_view::npos, pos_sv );
+	}
+
+	constexpr void daw_string_view_find_last_not_of_if_004( ) {
+		daw::sv2::string_view const sv = "abcabf ghijklm     \n";
+		auto pos_sv = sv.find_last_not_of_if( []( char ) { return false; } );
+		daw::expecting( sv.size( ) - 1, pos_sv );
+	}
+
+	constexpr void daw_string_view_find_last_not_of_if_005( ) {
+		daw::sv2::string_view const sv = "abcabf ghijklm     \n";
+		auto pos_sv = sv.find_last_not_of_if( []( char ) { return true; } );
+		daw::expecting( daw::sv2::string_view::npos, pos_sv );
+	}
+
 	constexpr void daw_string_view_search_001( ) {
 		daw::sv2::string_view const a = "abcdeaaaijklm";
 		auto pos = a.search( "aaa" );
 		daw::expecting( 5U, pos );
 	}
 
+	constexpr void daw_string_view_search_002( ) {
+		daw::sv2::string_view const a = "";
+		auto pos = a.search( "aaa" );
+		daw::expecting( daw::sv2::string_view::npos, pos );
+	}
+
+	constexpr void daw_string_view_search_003( ) {
+		daw::sv2::string_view const a = "abcdeaaaijklm";
+		auto pos = a.search( "xdf" );
+		daw::expecting( daw::sv2::string_view::npos, pos );
+	}
+
 	constexpr void daw_string_view_search_last_001( ) {
 		daw::sv2::string_view const a = "abcdeaaaijklm";
 		auto pos = a.search_last( "aaa" );
 		daw::expecting( 5U, pos );
+	}
+
+	constexpr void daw_string_view_search_last_002( ) {
+		daw::sv2::string_view const a = "abcdeaaaijklm";
+		auto pos = a.search_last( "aaa", 3 );
+		daw::expecting( 5U, pos );
+	}
+
+	constexpr void daw_string_view_search_last_003( ) {
+		daw::sv2::string_view const a = "abcdeaaaijklm";
+		auto pos = a.search_last( "" );
+		daw::expecting( daw::sv2::string_view::npos, pos );
+	}
+
+	constexpr void daw_string_view_search_last_004( ) {
+		daw::sv2::string_view const a = "";
+		auto pos = a.search_last( "a" );
+		daw::expecting( daw::sv2::string_view::npos, pos );
+	}
+
+	constexpr void daw_string_view_search_last_005( ) {
+		daw::sv2::string_view const a = "abcdeaaaijklm";
+		auto pos = a.search_last( "aaa", 100 );
+		daw::expecting( daw::sv2::string_view::npos, pos );
 	}
 
 	void tc001( ) {
@@ -935,7 +1049,6 @@ namespace daw {
 	constexpr void daw_pop_front_until_sv_test_001( ) {
 		std::string_view str = "This is a test";
 		auto sv = daw::sv2::string_view( str.data( ), str.size( ) );
-		using namespace daw::sv2::string_view_literals;
 		daw::expecting( "This"_sv, sv.pop_front_until( " " ) );
 		daw::expecting( "is"_sv, sv.pop_front_until( " " ) );
 		daw::expecting( "a"_sv, sv.pop_front_until( " " ) );
@@ -966,7 +1079,6 @@ namespace daw {
 	constexpr void daw_pop_back_until_sv_test_001( ) {
 		std::string_view str = "This is a test";
 		daw::sv2::string_view sv{ str.data( ), str.size( ) };
-		using namespace sv2::string_view_literals;
 		daw::expecting( "test"_sv, sv.pop_back_until( " " ) );
 		daw::expecting( "a"_sv, sv.pop_back_until( " " ) );
 		daw::expecting( "is"_sv, sv.pop_back_until( " " ) );
@@ -1037,7 +1149,7 @@ namespace daw {
 	}
 
 // Workaround
-#ifndef WIN32
+#if not defined( _MSC_VER ) or defined( __clang__ )
 	static_assert(
 	  decltype( sv2::basic_string_view( "This is a test" ) )::extent == 14 );
 
@@ -1045,6 +1157,9 @@ namespace daw {
 	constexpr bool extent_test_001( char const ( &str )[N] ) noexcept {
 		sv2::basic_string_view sv( str );
 		return decltype( sv )::extent >= 0;
+	}
+	void daw_extent_test_001( ) {
+		daw::expecting( extent_test_001( "this is a test" ) );
 	}
 	static_assert( extent_test_001( "this is a test" ) );
 
@@ -1058,6 +1173,9 @@ namespace daw {
 		       decltype( svb )::extent == daw::dynamic_string_size;
 	}
 	static_assert( extent_to_dynamic_001( "Testing testing 1 2 3" ) );
+	void daw_extent_to_dynamic_test_001( ) {
+		daw::expecting( extent_to_dynamic_001( "Testing testing 1 2 3" ) );
+	}
 #endif
 
 	constexpr bool ensure_same_at_ct( ) {
@@ -1091,7 +1209,6 @@ namespace daw {
 	}
 
 	constexpr void daw_literal_test_001( ) {
-		using namespace daw::sv2::string_view_literals;
 		auto sv_char = "Hello"_sv;
 		static_assert(
 		  std::is_same_v<char, typename decltype( sv_char )::value_type> );
@@ -1127,6 +1244,42 @@ namespace daw {
 		auto hash = daw::sv2::generic_hash( message );
 		daw::expecting( std::size_t{ 0x8C0E'C8D1'FB9E'6E32ULL }, hash );
 	}
+
+	constexpr void daw_rfind_test_001( ) {
+		daw::sv2::string_view const sv = "This is a string";
+		auto pos_sv = sv.rfind( "is" );
+		daw::expecting( 5U, pos_sv );
+	}
+
+	constexpr void daw_rfind_test_002( ) {
+		daw::sv2::string_view const sv = "";
+		auto pos_sv = sv.rfind( "is" );
+		daw::expecting( daw::sv2::string_view::npos, pos_sv );
+	}
+
+	constexpr void daw_rfind_test_003( ) {
+		daw::sv2::string_view const sv = "This is a string";
+		auto pos_sv = sv.rfind( "" );
+		daw::expecting( 16U, pos_sv );
+	}
+
+	constexpr void daw_find_test_001( ) {
+		daw::sv2::string_view const sv = "This is a string";
+		auto pos_sv = sv.find( "is" );
+		daw::expecting( 2U, pos_sv );
+	}
+
+	constexpr void daw_find_test_002( ) {
+		daw::sv2::string_view const sv = "";
+		auto pos_sv = sv.find( "is" );
+		daw::expecting( daw::sv2::string_view::npos, pos_sv );
+	}
+
+	constexpr void daw_find_test_003( ) {
+		daw::sv2::string_view const sv = "This is a string";
+		auto pos_sv = sv.find( "" );
+		daw::expecting( 0U, pos_sv );
+	}
 } // namespace daw
 
 int main( ) {
@@ -1136,8 +1289,19 @@ int main( ) {
 	daw::daw_string_view_find_last_of_002( );
 	daw::daw_string_view_find_last_of_003( );
 	daw::daw_string_view_find_last_of_004( );
+	daw::sv2::string_view arg = "";
+	daw::do_not_optimize( arg );
+	daw::daw_string_view_find_last_of_005( arg );
+	daw::sv2::string_view arg2 = "a";
+	daw::do_not_optimize( arg2 );
+	daw::daw_string_view_find_last_of_006( arg2 );
+	daw::daw_string_view_find_last_of_007( arg2 );
 	daw::daw_string_view_find_first_of_if_001( );
+	daw::daw_string_view_find_first_of_if_002( );
+	daw::daw_string_view_find_first_of_if_003( );
 	daw::daw_string_view_find_first_not_of_if_001( );
+	daw::daw_string_view_find_first_not_of_if_002( );
+	daw::daw_string_view_find_first_not_of_if_003( );
 	daw::daw_string_view_find_first_of_001( );
 	daw::daw_string_view_find_first_of_002( );
 	daw::daw_string_view_find_first_of_003( );
@@ -1147,10 +1311,21 @@ int main( ) {
 	daw::daw_string_view_find_last_not_of_001( );
 	daw::daw_string_view_find_last_not_of_002( );
 	daw::daw_string_view_find_last_not_of_003( );
+	daw::daw_string_view_find_last_not_of_004( );
+	daw::daw_string_view_find_last_not_of_005( );
 	daw::daw_string_view_find_last_not_of_if_001( );
 	daw::daw_string_view_find_last_not_of_if_002( );
+	daw::daw_string_view_find_last_not_of_if_003( );
+	daw::daw_string_view_find_last_not_of_if_004( );
+	daw::daw_string_view_find_last_not_of_if_005( );
 	daw::daw_string_view_search_001( );
+	daw::daw_string_view_search_002( );
+	daw::daw_string_view_search_003( );
 	daw::daw_string_view_search_last_001( );
+	daw::daw_string_view_search_last_002( );
+	daw::daw_string_view_search_last_003( );
+	daw::daw_string_view_search_last_004( );
+	daw::daw_string_view_search_last_005( );
 	daw::tc001( );
 	daw::tc002( );
 	daw::tc003( );
@@ -1208,4 +1383,14 @@ int main( ) {
 	daw::daw_literal_test_001( );
 	daw::daw_stdhash_test_001( );
 	daw::daw_generichash_test_001( );
+	daw::daw_rfind_test_001( );
+	daw::daw_rfind_test_002( );
+	daw::daw_rfind_test_003( );
+	daw::daw_find_test_001( );
+	daw::daw_find_test_002( );
+	daw::daw_find_test_003( );
+#if not defined( _MSC_VER ) or defined( __clang__ )
+	daw::daw_extent_to_dynamic_test_001( );
+	daw::daw_extent_test_001( );
+#endif
 }

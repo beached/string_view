@@ -1050,42 +1050,14 @@ namespace daw {
 				return find_last_of( s, npos );
 			}
 
-			template<typename UnaryPredicate>
-			[[nodiscard]] constexpr size_type find_last_of_if( UnaryPredicate pred,
-			                                                   size_type pos ) const {
-
-				(void)traits::is_unary_predicate_test<UnaryPredicate, CharT>( );
-
-				auto haystack = substr( 0, pos );
-				auto iter = daw::algorithm::find_if( haystack.crbegin( ),
-				                                     haystack.crend( ), pred );
-				return iter == crend( ) ? npos : reverse_distance( crbegin( ), iter );
-			}
-
-			template<typename UnaryPredicate>
-			[[nodiscard]] constexpr size_type
-			find_last_of_if( UnaryPredicate pred ) const {
-				return find_last_of_if( pred, npos );
-			}
-
 			[[nodiscard]] constexpr size_type find_last_of( CharT c,
 			                                                size_type pos ) const {
-				if( pos >= size( ) ) {
-					pos = 0;
-				}
-				auto first = std::prev( m_last );
-				auto const last = std::next( m_first, pos );
-				while( first != last ) {
-					if( *first == c ) {
-						return static_cast<size_type>( std::distance( m_first, first ) );
-					}
-					--first;
-				}
-				return npos;
+				return find_last_of( basic_string_view( std::addressof( c ), 1 ), pos );
 			}
 
 			[[nodiscard]] constexpr size_type find_last_of( CharT c ) const {
-				return find_last_of( c, npos );
+				return find_last_of( basic_string_view( std::addressof( c ), 1 ),
+				                     npos );
 			}
 
 			template<size_type N>
@@ -1114,6 +1086,24 @@ namespace daw {
 
 			[[nodiscard]] constexpr size_type find_last_of( const_pointer s ) const {
 				return find_last_of( basic_string_view<CharT, BoundsType>( s ), npos );
+			}
+
+			template<typename UnaryPredicate>
+			[[nodiscard]] constexpr size_type find_last_of_if( UnaryPredicate pred,
+			                                                   size_type pos ) const {
+
+				(void)traits::is_unary_predicate_test<UnaryPredicate, CharT>( );
+
+				auto haystack = substr( 0, pos );
+				auto iter = daw::algorithm::find_if( haystack.crbegin( ),
+				                                     haystack.crend( ), pred );
+				return iter == crend( ) ? npos : reverse_distance( crbegin( ), iter );
+			}
+
+			template<typename UnaryPredicate>
+			[[nodiscard]] constexpr size_type
+			find_last_of_if( UnaryPredicate pred ) const {
+				return find_last_of_if( pred, npos );
 			}
 
 			template<string_view_bounds_type Bounds, std::ptrdiff_t Ex>
@@ -1231,7 +1221,7 @@ namespace daw {
 					pos = size( ) - 1;
 				}
 				if( v.empty( ) ) {
-					return pos - 1;
+					return pos;
 				}
 				for( auto n = static_cast<difference_type>( pos ); n >= 0; --n ) {
 					if( v.find( m_first[n] ) == npos ) {
