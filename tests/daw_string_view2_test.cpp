@@ -240,7 +240,6 @@ namespace daw {
 		daw::expecting( 9U, pos );
 	}
 
-
 	constexpr void daw_string_view_find_last_not_of_if_001( ) {
 		daw::sv2::string_view const sv = "abcabf ghijklm     \n";
 		auto pos_sv =
@@ -1236,13 +1235,13 @@ namespace daw {
 		std::hash<daw::sv2::string_view> h{ };
 		daw::sv2::string_view message = "Hello World!";
 		auto hash = h( message );
-		daw::expecting( std::size_t{ 0x8C0E'C8D1'FB9E'6E32ULL }, hash );
+		daw::expecting( std::uint64_t{ 0x8C0E'C8D1'FB9E'6E32ULL }, hash );
 	}
 
 	constexpr void daw_generichash_test_001( ) {
 		daw::sv2::string_view message = "Hello World!";
 		auto hash = daw::sv2::generic_hash( message );
-		daw::expecting( std::size_t{ 0x8C0E'C8D1'FB9E'6E32ULL }, hash );
+		daw::expecting( std::uint64_t{ 0x8C0E'C8D1'FB9E'6E32ULL }, hash );
 	}
 
 	constexpr void daw_rfind_test_001( ) {
