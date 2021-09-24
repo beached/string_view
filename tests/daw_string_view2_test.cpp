@@ -1042,8 +1042,8 @@ namespace daw {
 		return true;
 	}
 
-#if not defined( _MSC_VER ) or defined( __clang__ )
 	constexpr void daw_diff_assignment_001( ) {
+#if not defined( _MSC_VER ) or defined( __clang__ )
 		daw::sv2::basic_string_view a = "This is a test";
 		daw::sv2::string_view b = "Hello";
 		daw::expecting_message( a != b, "Expected equal" );
@@ -1051,8 +1051,8 @@ namespace daw {
 		// Should have different types
 		b = a;
 		daw::expecting_message( a == b, "Expected equal" );
-	}
 #endif
+	}
 
 	constexpr void daw_literal_test_001( ) {
 		using namespace daw::sv2::string_view_literals;
