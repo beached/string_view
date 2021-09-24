@@ -33,8 +33,6 @@ if (${CMAKE_CXX_COMPILER_ID} STREQUAL "Clang" OR ${CMAKE_CXX_COMPILER_ID} STREQU
                 -Wno-newline-eof
                 # This is for when specializing things like tuple_size and each implementer gets to choose struct/class
                 -Wno-mismatched-tags
-                # This warns on u8 testing
-                -Wno-c++20-compat
         )
         if (DAW_SV_USE_STDEXCEPT)
             # When std::exception is the parent, this warning is emitted because the destructor is defined inline

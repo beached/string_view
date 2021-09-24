@@ -1067,13 +1067,10 @@ namespace daw {
 		auto sv_wchar_t = L"Hello"_sv;
 		static_assert(
 		  std::is_same_v<wchar_t, typename decltype( sv_wchar_t )::value_type> );
-		auto sv_char8_t = u8"Hello"_sv;
 #if defined( __cpp_char8_t )
+		auto sv_char8_t = u8"Hello"_sv;
 		static_assert(
 		  std::is_same_v<char8_t, typename decltype( sv_char8_t )::value_type> );
-#else
-		static_assert(
-		  std::is_same_v<char, typename decltype( sv_char8_t )::value_type> );
 #endif
 		static_assert(
 		  std::is_same_v<wchar_t, typename decltype( sv_wchar_t )::value_type> );
