@@ -44,7 +44,12 @@ namespace daw {
 		if( is_equal_nc( str, "c" ) ) {
 			return tmp_e::c;
 		}
+#if defined( DAW_USE_EXCEPTIONS )
 		throw std::runtime_error( "unknown http request method" );
+#else
+		std::cerr << "Unknown http request method\n";
+		std::abort( );
+#endif
 	}
 
 	constexpr daw::sv2::string_view do_something( daw::sv2::string_view str,
