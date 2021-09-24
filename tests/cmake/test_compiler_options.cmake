@@ -1,10 +1,10 @@
 
-option(DAW_JSON_USE_SANITIZERS "Enable address and undefined sanitizers" OFF)
+option(DAW_USE_SANITIZERS "Enable address and undefined sanitizers" OFF)
 option(DAW_WERROR "Enable WError for test builds" OFF)
-option(DAW_JSON_COVERAGE "Enable code coverage(gcc/clang)" OFF)
+option(DAW_USE_COVERAGE "Enable code coverage(gcc/clang)" OFF)
 
 if (${CMAKE_CXX_COMPILER_ID} STREQUAL "Clang" OR ${CMAKE_CXX_COMPILER_ID} STREQUAL "AppleClang")
-    if (DAW_JSON_COVERAGE)
+    if (DAW_USE_COVERAGE)
         add_compile_options(-fprofile-instr-generate -fcoverage-mapping)
         add_link_options(-fprofile-instr-generate -fcoverage-mapping)
     endif ()
@@ -34,7 +34,7 @@ if (${CMAKE_CXX_COMPILER_ID} STREQUAL "Clang" OR ${CMAKE_CXX_COMPILER_ID} STREQU
                 # This is for when specializing things like tuple_size and each implementer gets to choose struct/class
                 -Wno-mismatched-tags
         )
-        if (DAW_JSON_USE_STDEXCEPT)
+        if (DAW_SV_USE_STDEXCEPT)
             # When std::exception is the parent, this warning is emitted because the destructor is defined inline
             add_compile_options(-Wno-weak-vtables)
         endif ()
@@ -67,7 +67,7 @@ if (${CMAKE_CXX_COMPILER_ID} STREQUAL "Clang" OR ${CMAKE_CXX_COMPILER_ID} STREQU
         set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -g -DDEBUG")
         set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -O3 -DNDEBUG")
 
-        if (DAW_JSON_USE_SANITIZERS)
+        if (DAW_USE_SANITIZERS)
             message("Using sanitizers")
             #set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -fsanitize=null")
             #set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -fsanitize=null")
@@ -82,7 +82,7 @@ if (${CMAKE_CXX_COMPILER_ID} STREQUAL "Clang" OR ${CMAKE_CXX_COMPILER_ID} STREQU
         endif ()
     endif ()
 elseif (${CMAKE_CXX_COMPILER_ID} STREQUAL "GNU")
-    if (DAW_JSON_COVERAGE)
+    if (DAW_USE_COVERAGE)
         add_compile_options(-fprofile-instr-generate -fcoverage-mapping)
     endif ()
     message("g++ ${CMAKE_CXX_COMPILER_VERSION} detected")
@@ -114,7 +114,7 @@ elseif (${CMAKE_CXX_COMPILER_ID} STREQUAL "GNU")
     set(CMAKE_CXX_FLAGS_DEBUG "${CMAKE_CXX_FLAGS_DEBUG} -g -DDEBUG")
     set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -Og -g -DNDEBUG")
 
-    if (DAW_JSON_USE_SANITIZERS)
+    if (DAW_USE_SANITIZERS)
         message("Using sanitizers")
         #UBSAN makes constexpr code paths not constexpr	on gcc9-11
         #set(CMAKE_CXX_FLAGS_RELEASE "${CMAKE_CXX_FLAGS_RELEASE} -fsanitize=undefined")
@@ -136,7 +136,7 @@ elseif (MSVC)
         add_compile_options(/wd4127 /wd4141 /WX)
         add_definitions(-D_CRT_SECURE_NO_WARNINGS)
     endif ()
-    if (DAW_JSON_USE_SANITIZERS)
+    if (DAW_USE_SANITIZERS)
         add_compile_options(/fsanitize=address)
     endif ()
 else ()

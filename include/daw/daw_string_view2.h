@@ -60,14 +60,19 @@ namespace daw {
 			template<typename T>
 			using is_sv2_test = typename T::i_am_a_daw_string_view2;
 
+			template<typename T>
+			using is_sv2_t = daw::is_detected<is_sv2_test, T>;
+
+			template<typename T>
+			inline constexpr bool is_sv2_v = is_sv2_t<T>::value;
+
 			template<typename T, typename CharT>
 			struct is_string_view_like
 			  : std::conjunction<daw::is_detected<has_datasize_test, T>,
-			                     daw::not_trait<daw::is_detected<is_sv2_test, T>>> {};
+			                     daw::not_trait<is_sv2_t<T>>> {};
 
 			static_assert( daw::is_detected_v<has_datasize_test, std::string> );
-			static_assert(
-			  daw::not_trait<daw::is_detected<is_sv2_test, std::string>>::value );
+			static_assert( daw::not_trait<is_sv2_t<std::string>>::value );
 			static_assert( is_string_view_like<std::string, char>::value );
 
 			template<typename T, typename CharT>
@@ -258,10 +263,11 @@ namespace daw {
 			         std::enable_if_t<sv2_details::is_contigious_range_constructible<
 			                            T, CharT>::value,
 			                          std::nullptr_t> = nullptr>
-			constexpr operator T( ) noexcept(
+			explicit constexpr operator T( ) noexcept(
 			  std::is_nothrow_constructible_v<T, CharT *, size_type> ) {
 				return T{ data( ), size( ) };
 			}
+
 #if not defined( _MSC_VER ) or defined( __clang__ )
 			template<string_view_bounds_type Bounds, std::ptrdiff_t Ex>
 			constexpr auto
@@ -462,7 +468,7 @@ namespace daw {
 			[[nodiscard]] constexpr basic_string_view
 			pop_front_until( UnaryPredicate pred ) {
 
-				auto pos = find_first_of_if( daw::move( pred ) );
+				auto pos = find_first_of_if( DAW_MOVE( pred ) );
 				auto result = pop_front( pos );
 				remove_prefix( sv2_details::find_predicate_result_size( pred ) );
 				return result;
@@ -562,7 +568,7 @@ namespace daw {
 			[[nodiscard]] constexpr basic_string_view
 			pop_back_until( UnaryPredicate pred ) {
 
-				auto pos = find_last_of_if( daw::move( pred ) );
+				auto pos = find_last_of_if( DAW_MOVE( pred ) );
 				if( pos == npos ) {
 					auto result = *this;
 					remove_prefix( npos );
@@ -1023,9 +1029,9 @@ namespace daw {
 				} else {
 					pos = size( ) - ( pos + 1U );
 				}
-				auto iter = std::find_first_of(
-				  std::next( rbegin( ), static_cast<difference_type>( pos ) ), rend( ),
-				  s.rbegin( ), s.rend( ) );
+				auto haystack = substr( pos );
+				auto iter = daw::algorithm::find_first_of(
+				  haystack.rbegin( ), haystack.rend( ), s.rbegin( ), s.rend( ) );
 				return iter == rend( ) ? npos : reverse_distance( rbegin( ), iter );
 			}
 
@@ -1041,13 +1047,9 @@ namespace daw {
 
 				(void)traits::is_unary_predicate_test<UnaryPredicate, CharT>( );
 
-				if( pos >= size( ) ) {
-					pos = 0;
-				} else {
-					pos = size( ) - ( pos + 1 );
-				}
-				auto iter = std::find_if(
-				  crbegin( ) + static_cast<difference_type>( pos ), crend( ), pred );
+				auto haystack = substr( 0, pos );
+				auto iter = daw::algorithm::find_if( haystack.crbegin( ),
+				                                     haystack.crend( ), pred );
 				return iter == crend( ) ? npos : reverse_distance( crbegin( ), iter );
 			}
 
@@ -1116,8 +1118,9 @@ namespace daw {
 					return pos;
 				}
 
+				auto haystack = substr( pos );
 				const_iterator iter = details::find_first_not_of(
-				  begin( ) + pos, end( ), v.begin( ),
+				  haystack.begin( ), haystack.end( ), v.begin( ),
 				  std::next( v.begin( ), static_cast<ptrdiff_t>( v.size( ) ) ), bp_eq );
 				if( end( ) == iter ) {
 					return npos;
@@ -1157,10 +1160,24 @@ namespace daw {
 				                          pos );
 			}
 
+			template<size_type N>
+			[[nodiscard]] constexpr size_type
+			find_first_not_of( CharT const( &&s )[N], size_type pos ) const {
+				return find_first_not_of(
+				  basic_string_view<CharT, BoundsType>( s, N - 1 ), pos );
+			}
+
 			[[nodiscard]] constexpr size_type
 			find_first_not_of( const_pointer s ) const {
 				return find_first_not_of( basic_string_view<CharT, BoundsType>( s ),
 				                          0 );
+			}
+
+			template<size_type N>
+			[[nodiscard]] constexpr size_type
+			find_first_not_of( CharT const( &&s )[N] ) const {
+				return find_first_not_of(
+				  basic_string_view<CharT, BoundsType>( s, N - 1 ), 0 );
 			}
 
 			template<
@@ -1307,143 +1324,122 @@ namespace daw {
 				return ends_with( basic_string_view<CharT, BoundsType>( s ) );
 			}
 
+			[[nodiscard]] constexpr bool
+			operator==( basic_string_view rhs ) noexcept {
+				return compare( rhs ) == 0;
+			}
+
+			template<typename StringView,
+			         std::enable_if_t<
+			           sv2_details::is_string_view_like<StringView, CharT>::value,
+			           std::nullptr_t> = nullptr>
 			[[nodiscard]] friend constexpr bool
-			operator==( basic_string_view lhs, basic_string_view rhs ) noexcept {
-				return lhs.compare( rhs ) == 0;
+			operator==( StringView &&lhs, basic_string_view rhs ) noexcept {
+				return basic_string_view( std::data( lhs ), std::size( lhs ) )
+				         .compare( rhs ) == 0;
 			}
 
-			template<typename Rhs,
-			         std::enable_if_t<
-			           daw::not_trait<std::is_same<basic_string_view, Rhs>>::value,
-			           std::nullptr_t> = nullptr>
-			[[nodiscard]] friend constexpr bool operator==( basic_string_view lhs,
-			                                                Rhs const &rhs ) {
-				return lhs.compare( basic_string_view( rhs ) ) == 0;
-			}
-
-			template<typename Lhs,
-			         std::enable_if_t<
-			           daw::not_trait<std::is_same<basic_string_view, Lhs>>::value,
-			           std::nullptr_t> = nullptr>
-			[[nodiscard]] friend constexpr bool operator==( Lhs const &lhs,
-			                                                basic_string_view rhs ) {
+			[[nodiscard]] friend constexpr bool
+			operator==( const_pointer lhs, basic_string_view rhs ) noexcept {
 				return basic_string_view( lhs ).compare( rhs ) == 0;
 			}
 
+			[[nodiscard]] constexpr bool
+			operator!=( basic_string_view rhs ) noexcept {
+				return compare( rhs ) != 0;
+			}
+
 			[[nodiscard]] friend constexpr bool
-			operator!=( basic_string_view lhs, basic_string_view rhs ) noexcept {
-				return lhs.compare( rhs ) != 0;
-			}
-
-			template<typename Rhs,
-			         std::enable_if_t<
-			           daw::not_trait<std::is_same<basic_string_view, Rhs>>::value,
-			           std::nullptr_t> = nullptr>
-			[[nodiscard]] friend constexpr bool operator!=( basic_string_view lhs,
-			                                                Rhs const &rhs ) {
-				return lhs.compare( basic_string_view( rhs ) ) != 0;
-			}
-
-			template<typename Lhs,
-			         std::enable_if_t<
-			           daw::not_trait<std::is_same<basic_string_view, Lhs>>::value,
-			           std::nullptr_t> = nullptr>
-			[[nodiscard]] friend constexpr bool operator!=( Lhs const &lhs,
-			                                                basic_string_view rhs ) {
+			operator!=( const_pointer lhs, basic_string_view rhs ) noexcept {
 				return basic_string_view( lhs ).compare( rhs ) != 0;
 			}
 
+			template<typename StringView,
+			         std::enable_if_t<
+			           sv2_details::is_string_view_like<StringView, CharT>::value,
+			           std::nullptr_t> = nullptr>
 			[[nodiscard]] friend constexpr bool
-			operator<( basic_string_view lhs, basic_string_view rhs ) noexcept {
-				return lhs.compare( rhs ) < 0;
+			operator!=( StringView &&lhs, basic_string_view rhs ) noexcept {
+				return basic_string_view( std::data( lhs ), std::size( lhs ) )
+				         .compare( rhs ) != 0;
 			}
 
-			template<typename Rhs,
-			         std::enable_if_t<
-			           daw::not_trait<std::is_same<basic_string_view, Rhs>>::value,
-			           std::nullptr_t> = nullptr>
-			[[nodiscard]] friend constexpr bool operator<( basic_string_view lhs,
-			                                               Rhs const &rhs ) {
-				return lhs.compare( basic_string_view( rhs ) ) < 0;
+			[[nodiscard]] constexpr bool operator<( basic_string_view rhs ) noexcept {
+				return compare( rhs ) < 0;
 			}
 
-			template<typename Lhs,
-			         std::enable_if_t<
-			           daw::not_trait<std::is_same<basic_string_view, Lhs>>::value,
-			           std::nullptr_t> = nullptr>
-			[[nodiscard]] friend constexpr bool operator<( Lhs const &lhs,
-			                                               basic_string_view rhs ) {
+			[[nodiscard]] friend constexpr bool
+			operator<( const_pointer lhs, basic_string_view rhs ) noexcept {
 				return basic_string_view( lhs ).compare( rhs ) < 0;
 			}
 
+			template<typename StringView,
+			         std::enable_if_t<
+			           sv2_details::is_string_view_like<StringView, CharT>::value,
+			           std::nullptr_t> = nullptr>
 			[[nodiscard]] friend constexpr bool
-			operator<=( basic_string_view lhs, basic_string_view rhs ) noexcept {
-				return lhs.compare( rhs ) <= 0;
+			operator<( StringView &&lhs, basic_string_view rhs ) noexcept {
+				return basic_string_view( std::data( lhs ), std::size( lhs ) )
+				         .compare( rhs ) < 0;
 			}
 
-			template<typename Rhs,
-			         std::enable_if_t<
-			           daw::not_trait<std::is_same<basic_string_view, Rhs>>::value,
-			           std::nullptr_t> = nullptr>
-			[[nodiscard]] friend constexpr bool operator<=( basic_string_view lhs,
-			                                                Rhs const &rhs ) {
-				return lhs.compare( rhs ) <= 0;
+			[[nodiscard]] constexpr bool
+			operator<=( basic_string_view rhs ) noexcept {
+				return compare( rhs ) <= 0;
 			}
 
-			template<typename Lhs,
-			         std::enable_if_t<
-			           daw::not_trait<std::is_same<basic_string_view, Lhs>>::value,
-			           std::nullptr_t> = nullptr>
-			[[nodiscard]] friend constexpr bool operator<=( Lhs const &lhs,
-			                                                basic_string_view rhs ) {
+			[[nodiscard]] friend constexpr bool
+			operator<=( const_pointer lhs, basic_string_view rhs ) noexcept {
 				return basic_string_view( lhs ).compare( rhs ) <= 0;
 			}
 
+			template<typename StringView,
+			         std::enable_if_t<
+			           sv2_details::is_string_view_like<StringView, CharT>::value,
+			           std::nullptr_t> = nullptr>
 			[[nodiscard]] friend constexpr bool
-			operator>( basic_string_view lhs, basic_string_view rhs ) noexcept {
-				return lhs.compare( rhs ) > 0;
+			operator<=( StringView &&lhs, basic_string_view rhs ) noexcept {
+				return basic_string_view( std::data( lhs ), std::size( lhs ) )
+				         .compare( rhs ) <= 0;
 			}
 
-			template<typename Rhs,
-			         std::enable_if_t<
-			           daw::not_trait<std::is_same<basic_string_view, Rhs>>::value,
-			           std::nullptr_t> = nullptr>
-			[[nodiscard]] friend constexpr bool operator>( basic_string_view lhs,
-			                                               Rhs const &rhs ) {
-				return lhs.compare( basic_string_view( rhs ) ) > 0;
+			[[nodiscard]] constexpr bool operator>( basic_string_view rhs ) noexcept {
+				return compare( rhs ) > 0;
 			}
 
-			template<typename Lhs,
-			         std::enable_if_t<
-			           daw::not_trait<std::is_same<basic_string_view, Lhs>>::value,
-			           std::nullptr_t> = nullptr>
-			[[nodiscard]] friend constexpr bool operator>( Lhs const &lhs,
-			                                               basic_string_view rhs ) {
+			[[nodiscard]] friend constexpr bool
+			operator>( const_pointer lhs, basic_string_view rhs ) noexcept {
 				return basic_string_view( lhs ).compare( rhs ) > 0;
 			}
 
+			template<typename StringView,
+			         std::enable_if_t<
+			           sv2_details::is_string_view_like<StringView, CharT>::value,
+			           std::nullptr_t> = nullptr>
 			[[nodiscard]] friend constexpr bool
-			operator>=( basic_string_view lhs, basic_string_view rhs ) noexcept {
-				return lhs.compare( basic_string_view( rhs ) ) >= 0;
-				return lhs.compare( rhs ) >= 0;
+			operator>( StringView &&lhs, basic_string_view rhs ) noexcept {
+				return basic_string_view( std::data( lhs ), std::size( lhs ) )
+				         .compare( rhs ) > 0;
 			}
 
-			template<typename Rhs,
-			         std::enable_if_t<
-			           daw::not_trait<std::is_same<basic_string_view, Rhs>>::value,
-			           std::nullptr_t> = nullptr>
-			[[nodiscard]] friend constexpr bool operator>=( basic_string_view lhs,
-			                                                Rhs const &rhs ) {
-				return lhs.compare( basic_string_view( rhs ) ) >= 0;
+			[[nodiscard]] constexpr bool
+			operator>=( basic_string_view rhs ) noexcept {
+				return compare( rhs ) >= 0;
 			}
 
-			template<typename Lhs,
-			         std::enable_if_t<
-			           daw::not_trait<std::is_same<basic_string_view, Lhs>>::value,
-			           std::nullptr_t> = nullptr>
-			[[nodiscard]] friend constexpr bool operator>=( Lhs const &lhs,
-			                                                basic_string_view rhs ) {
+			[[nodiscard]] friend constexpr bool
+			operator>=( const_pointer lhs, basic_string_view rhs ) noexcept {
 				return basic_string_view( lhs ).compare( rhs ) >= 0;
+			}
+
+			template<typename StringView,
+			         std::enable_if_t<
+			           sv2_details::is_string_view_like<StringView, CharT>::value,
+			           std::nullptr_t> = nullptr>
+			[[nodiscard]] friend constexpr bool
+			operator>=( StringView &&lhs, basic_string_view rhs ) noexcept {
+				return basic_string_view( std::data( lhs ), std::size( lhs ) )
+				         .compare( rhs ) >= 0;
 			}
 		}; // basic_string_view
 
@@ -1461,22 +1457,29 @@ namespace daw {
 		namespace string_view_literals {
 			[[nodiscard]] constexpr string_view
 			operator"" _sv( char const *str, std::size_t len ) noexcept {
-				return daw::sv2::string_view{ str, len };
+				return string_view{ str, len };
 			}
+
+#if defined( __cpp_char8_t )
+			[[nodiscard]] constexpr u8string_view
+			operator"" _sv( char8_t const *str, std::size_t len ) noexcept {
+				return u8string_view{ str, len };
+			}
+#endif
 
 			[[nodiscard]] constexpr u16string_view
 			operator"" _sv( char16_t const *str, std::size_t len ) noexcept {
-				return daw::sv2::u16string_view{ str, len };
+				return u16string_view{ str, len };
 			}
 
 			[[nodiscard]] constexpr u32string_view
 			operator"" _sv( char32_t const *str, std::size_t len ) noexcept {
-				return daw::sv2::u32string_view{ str, len };
+				return u32string_view{ str, len };
 			}
 
 			[[nodiscard]] constexpr wstring_view
 			operator"" _sv( wchar_t const *str, std::size_t len ) noexcept {
-				return daw::sv2::wstring_view{ str, len };
+				return wstring_view{ str, len };
 			}
 		} // namespace string_view_literals
 

@@ -103,6 +103,18 @@ namespace daw {
 		daw::expecting( 5U, pos );
 	}
 
+	constexpr void daw_string_view_find_first_not_of_002( ) {
+		daw::sv2::string_view const a = "abcabfghijklm";
+		auto pos = a.find_first_not_of( "abc", 1000 );
+		daw::expecting( daw::sv2::string_view::npos, pos );
+		pos = a.find_first_not_of( "" );
+		daw::expecting( 0U, pos );
+		pos = a.find_first_not_of( "abc", 4U );
+		daw::expecting( 5U, pos );
+		pos = a.find_first_not_of( a );
+		daw::expecting( daw::sv2::string_view::npos, pos );
+	}
+
 	constexpr void daw_string_view_find_last_not_of_001( ) {
 		std::string_view const str = "abcabfghijklm";
 		daw::sv2::string_view const sv = "abcabfghijklm";
@@ -430,7 +442,7 @@ namespace daw {
 	void tc016conversion( ) {
 		daw::sv2::string_view view = "Hello World";
 
-		std::string string = view;
+		std::string string = static_cast<std::string>( view );
 
 		puts( "Copies view to new location in std::string" );
 		{ daw::expecting( view.data( ) != string.data( ) ); }
@@ -817,17 +829,29 @@ namespace daw {
 
 	constexpr void daw_can_be_string_view_starts_with_004( ) {
 		daw::expecting(
-		  !daw::sv2::string_view{ "This is a test" }.starts_with( "ahis" ) );
+		  not daw::sv2::string_view{ "This is a test" }.starts_with( "ahis" ) );
 	}
 
 	constexpr void daw_can_be_string_view_starts_with_005( ) {
-		daw::expecting( !daw::sv2::string_view{ "This is a test" }.starts_with(
+		daw::expecting( not daw::sv2::string_view{ "This is a test" }.starts_with(
 		  daw::sv2::string_view{ "ahis" } ) );
 	}
 
 	constexpr void daw_can_be_string_view_starts_with_006( ) {
 		daw::expecting(
-		  !daw::sv2::string_view{ "This is a test" }.starts_with( 'a' ) );
+		  not daw::sv2::string_view{ "This is a test" }.starts_with( 'a' ) );
+	}
+
+	constexpr void daw_can_be_string_view_starts_with_007( ) {
+		daw::expecting( not daw::sv2::string_view{ }.starts_with( 'a' ) );
+	}
+
+	constexpr void daw_can_be_string_view_starts_with_008( ) {
+		daw::expecting( not daw::sv2::string_view{ }.starts_with( " " ) );
+	}
+
+	constexpr void daw_can_be_string_view_starts_with_009( ) {
+		daw::expecting( not daw::sv2::string_view{ " " }.starts_with( "    " ) );
 	}
 
 	constexpr void daw_can_be_string_view_ends_with_001( ) {
@@ -847,17 +871,29 @@ namespace daw {
 
 	constexpr void daw_can_be_string_view_ends_with_004( ) {
 		daw::expecting(
-		  !daw::sv2::string_view{ "This is a test" }.ends_with( "aest" ) );
+		  not daw::sv2::string_view{ "This is a test" }.ends_with( "aest" ) );
 	}
 
 	constexpr void daw_can_be_string_view_ends_with_005( ) {
-		daw::expecting( !daw::sv2::string_view{ "This is a test" }.ends_with(
+		daw::expecting( not daw::sv2::string_view{ "This is a test" }.ends_with(
 		  daw::sv2::string_view{ "aest" } ) );
 	}
 
 	constexpr void daw_can_be_string_view_ends_with_006( ) {
 		daw::expecting(
-		  !daw::sv2::string_view{ "This is a test" }.ends_with( 'a' ) );
+		  not daw::sv2::string_view{ "This is a test" }.ends_with( 'a' ) );
+	}
+
+	constexpr void daw_can_be_string_view_ends_with_007( ) {
+		daw::expecting( not daw::sv2::string_view{ "a" }.ends_with( "hello" ) );
+	}
+
+	constexpr void daw_can_be_string_view_ends_with_008( ) {
+		daw::expecting( not daw::sv2::string_view{ }.ends_with( ' ' ) );
+	}
+
+	constexpr void daw_can_be_string_view_ends_with_009( ) {
+		daw::expecting( not daw::sv2::string_view{ }.ends_with( " " ) );
 	}
 
 	constexpr void daw_pop_front_until_sv_test_001( ) {
@@ -891,7 +927,7 @@ namespace daw {
 		daw::expecting( sv, "This is a " );
 	}
 
-	constexpr void daw_pop_back_sv_test_001( ) {
+	constexpr void daw_pop_back_until_sv_test_001( ) {
 		std::string_view str = "This is a test";
 		daw::sv2::string_view sv{ str.data( ), str.size( ) };
 		using namespace sv2::string_view_literals;
@@ -900,6 +936,14 @@ namespace daw {
 		daw::expecting( "is"_sv, sv.pop_back_until( " " ) );
 		daw::expecting( "This"_sv, sv.pop_back_until( " " ) );
 		daw::expecting( sv.empty( ) );
+	}
+
+	constexpr void daw_pop_back_until_sv_test_002( ) {
+		daw::sv2::string_view sv = "This is a test";
+		auto result = sv.pop_back_until( []( char c ) { return c == 'x'; } );
+		daw::expecting_message( sv.empty( ), "Expected empty result" );
+		daw::expecting_message( result.end( ) == sv.end( ),
+		                        "Expected same end( )" );
 	}
 
 	constexpr void daw_pop_front_pred_test_001( ) {
@@ -911,11 +955,11 @@ namespace daw {
 	}
 
 	constexpr void daw_pop_back_pred_test_001( ) {
-		std::string_view str = "This is1a test";
-		daw::sv2::string_view sv{ str.data( ), str.size( ) };
-		auto rhs = sv.pop_back_until( []( auto c ) { return std::isdigit( c ); } );
-		daw::expecting( sv, "This is" );
-		daw::expecting( rhs, "a test" );
+		daw::sv2::string_view sv = "This is1a test";
+		auto result =
+		  sv.pop_back_until( []( auto c ) { return std::isdigit( c ); } );
+		daw::expecting( "This is", sv );
+		daw::expecting( "a test", result );
 	}
 
 	constexpr void daw_try_pop_back_until_sv_test_001( ) {
@@ -997,6 +1041,43 @@ namespace daw {
 		}
 		return true;
 	}
+
+	constexpr void daw_diff_assignment_001( ) {
+#if not defined( _MSC_VER ) or defined( __clang__ )
+		daw::sv2::basic_string_view a = "This is a test";
+		daw::sv2::string_view b = "Hello";
+		daw::expecting_message( a != b, "Expected equal" );
+		static_assert( not std::is_same_v<decltype( a ), decltype( b )> );
+		// Should have different types
+		b = a;
+		daw::expecting_message( a == b, "Expected equal" );
+#endif
+	}
+
+	constexpr void daw_literal_test_001( ) {
+		using namespace daw::sv2::string_view_literals;
+		auto sv_char = "Hello"_sv;
+		static_assert(
+		  std::is_same_v<char, typename decltype( sv_char )::value_type> );
+		auto sv_wchar_t = L"Hello"_sv;
+		static_assert(
+		  std::is_same_v<wchar_t, typename decltype( sv_wchar_t )::value_type> );
+#if defined( __cpp_char8_t )
+		auto sv_char8_t = u8"Hello"_sv;
+		static_assert(
+		  std::is_same_v<char8_t, typename decltype( sv_char8_t )::value_type> );
+#endif
+		static_assert(
+		  std::is_same_v<wchar_t, typename decltype( sv_wchar_t )::value_type> );
+		auto sv_char16_t = u"Hello"_sv;
+		static_assert(
+		  std::is_same_v<wchar_t, typename decltype( sv_wchar_t )::value_type> );
+		static_assert(
+		  std::is_same_v<char16_t, typename decltype( sv_char16_t )::value_type> );
+		auto sv_char32_t = U"Hello"_sv;
+		static_assert(
+		  std::is_same_v<char32_t, typename decltype( sv_char32_t )::value_type> );
+	}
 } // namespace daw
 
 int main( ) {
@@ -1007,6 +1088,7 @@ int main( ) {
 	daw::daw_string_view_find_first_not_of_if_001( );
 	daw::daw_string_view_find_first_of_001( );
 	daw::daw_string_view_find_first_not_of_001( );
+	daw::daw_string_view_find_first_not_of_002( );
 	daw::daw_string_view_find_last_not_of_001( );
 	daw::daw_string_view_find_last_not_of_002( );
 	daw::daw_string_view_find_last_not_of_003( );
@@ -1043,21 +1125,30 @@ int main( ) {
 	daw::daw_can_be_string_view_starts_with_004( );
 	daw::daw_can_be_string_view_starts_with_005( );
 	daw::daw_can_be_string_view_starts_with_006( );
+	daw::daw_can_be_string_view_starts_with_007( );
+	daw::daw_can_be_string_view_starts_with_008( );
+	daw::daw_can_be_string_view_starts_with_009( );
 	daw::daw_can_be_string_view_ends_with_001( );
 	daw::daw_can_be_string_view_ends_with_002( );
 	daw::daw_can_be_string_view_ends_with_003( );
 	daw::daw_can_be_string_view_ends_with_004( );
 	daw::daw_can_be_string_view_ends_with_005( );
 	daw::daw_can_be_string_view_ends_with_006( );
+	daw::daw_can_be_string_view_ends_with_007( );
+	daw::daw_can_be_string_view_ends_with_008( );
+	daw::daw_can_be_string_view_ends_with_009( );
 	daw::daw_pop_front_test_001( );
 	daw::daw_pop_front_count_test_001( );
 	daw::daw_pop_front_until_sv_test_001( );
 	daw::daw_pop_back_count_test_001( );
-	daw::daw_pop_back_sv_test_001( );
+	daw::daw_pop_back_until_sv_test_001( );
+	daw::daw_pop_back_until_sv_test_002( );
 	daw::daw_pop_front_pred_test_001( );
 	daw::daw_pop_back_pred_test_001( );
 	daw::daw_try_pop_back_until_sv_test_001( );
 	daw::daw_try_pop_back_until_sv_test_002( );
 	daw::daw_try_pop_front_until_sv_test_001( );
 	daw::daw_try_pop_front_until_sv_test_002( );
+	daw::daw_diff_assignment_001( );
+	daw::daw_literal_test_001( );
 }
