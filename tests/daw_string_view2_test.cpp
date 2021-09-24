@@ -44,7 +44,12 @@ namespace daw {
 		if( is_equal_nc( str, "c" ) ) {
 			return tmp_e::c;
 		}
+#if defined( DAW_USE_EXCEPTIONS )
 		throw std::runtime_error( "unknown http request method" );
+#else
+		std::cerr << "Unknown http request method\n";
+		std::abort( );
+#endif
 	}
 
 	constexpr daw::sv2::string_view do_something( daw::sv2::string_view str,
@@ -335,6 +340,7 @@ namespace daw {
 	//----------------------------------------------------------------------------
 
 	void tc010accessor( ) {
+#if defined( DAW_USE_EXCEPTIONS )
 		const char *str = "Hello World";
 		daw::sv2::string_view view = str;
 
@@ -351,6 +357,7 @@ namespace daw {
 			puts( "Expected out of range exception" );
 			std::abort( );
 		}
+#endif
 	}
 
 	//----------------------------------------------------------------------------
@@ -450,6 +457,7 @@ namespace daw {
 	//----------------------------------------------------------------------------
 
 	void tc018operation( ) {
+#if defined( DAW_USE_EXCEPTIONS )
 		daw::sv2::string_view const view = "Hello World";
 
 		puts( "Throws std::out_of_range if pos >= view.size()" );
@@ -505,11 +513,13 @@ namespace daw {
 
 			daw::expecting( view.copy( result, 20 ) == 11 );
 		}
+#endif
 	}
 
 	//----------------------------------------------------------------------------
 
 	void tc019operation( ) {
+#if defined( DAW_USE_EXCEPTIONS )
 		daw::sv2::string_view view = "Hello World";
 
 		puts( "Returns the full string when given no args" );
@@ -548,6 +558,7 @@ namespace daw {
 			puts( "Expected out_of_range_exception" );
 			std::abort( );
 		}
+#endif
 	}
 
 	//----------------------------------------------------------------------------

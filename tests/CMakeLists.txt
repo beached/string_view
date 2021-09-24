@@ -30,6 +30,6 @@ add_custom_target(full)
 
 add_executable( daw_string_view2_bin daw_string_view2_test.cpp )
 target_link_libraries(daw_string_view2_bin PRIVATE daw_test)
-add_test( daw_string_view2_test daw_string_view_bin )
+add_test( daw_string_view2_test daw_string_view2_bin )
 add_dependencies(full daw_string_view2_bin )
 
