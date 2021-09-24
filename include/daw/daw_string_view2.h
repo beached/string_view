@@ -262,6 +262,7 @@ namespace daw {
 			  std::is_nothrow_constructible_v<T, CharT *, size_type> ) {
 				return T{ data( ), size( ) };
 			}
+
 #if not defined( _MSC_VER ) or defined( __clang__ )
 			template<string_view_bounds_type Bounds, std::ptrdiff_t Ex>
 			constexpr auto
@@ -462,7 +463,7 @@ namespace daw {
 			[[nodiscard]] constexpr basic_string_view
 			pop_front_until( UnaryPredicate pred ) {
 
-				auto pos = find_first_of_if( daw::move( pred ) );
+				auto pos = find_first_of_if( DAW_MOVE( pred ) );
 				auto result = pop_front( pos );
 				remove_prefix( sv2_details::find_predicate_result_size( pred ) );
 				return result;
@@ -562,7 +563,7 @@ namespace daw {
 			[[nodiscard]] constexpr basic_string_view
 			pop_back_until( UnaryPredicate pred ) {
 
-				auto pos = find_last_of_if( daw::move( pred ) );
+				auto pos = find_last_of_if( DAW_MOVE( pred ) );
 				if( pos == npos ) {
 					auto result = *this;
 					remove_prefix( npos );
@@ -1023,9 +1024,9 @@ namespace daw {
 				} else {
 					pos = size( ) - ( pos + 1U );
 				}
-				auto iter = std::find_first_of(
-				  std::next( rbegin( ), static_cast<difference_type>( pos ) ), rend( ),
-				  s.rbegin( ), s.rend( ) );
+				auto haystack = substr( pos );
+				auto iter = daw::algorithm::find_first_of(
+				  haystack.rbegin( ), haystack.rend( ), s.rbegin( ), s.rend( ) );
 				return iter == rend( ) ? npos : reverse_distance( rbegin( ), iter );
 			}
 
@@ -1041,13 +1042,9 @@ namespace daw {
 
 				(void)traits::is_unary_predicate_test<UnaryPredicate, CharT>( );
 
-				if( pos >= size( ) ) {
-					pos = 0;
-				} else {
-					pos = size( ) - ( pos + 1 );
-				}
-				auto iter = std::find_if(
-				  crbegin( ) + static_cast<difference_type>( pos ), crend( ), pred );
+				auto haystack = substr( 0, pos );
+				auto iter = daw::algorithm::find_if( haystack.crbegin( ),
+				                                     haystack.crend( ), pred );
 				return iter == crend( ) ? npos : reverse_distance( crbegin( ), iter );
 			}
 
@@ -1116,8 +1113,9 @@ namespace daw {
 					return pos;
 				}
 
+				auto haystack = substr( pos );
 				const_iterator iter = details::find_first_not_of(
-				  begin( ) + pos, end( ), v.begin( ),
+				  haystack.begin( ), haystack.end( ), v.begin( ),
 				  std::next( v.begin( ), static_cast<ptrdiff_t>( v.size( ) ) ), bp_eq );
 				if( end( ) == iter ) {
 					return npos;
@@ -1157,10 +1155,24 @@ namespace daw {
 				                          pos );
 			}
 
+			template<size_type N>
+			[[nodiscard]] constexpr size_type
+			find_first_not_of( CharT const( &&s )[N], size_type pos ) const {
+				return find_first_not_of(
+				  basic_string_view<CharT, BoundsType>( s, N - 1 ), pos );
+			}
+
 			[[nodiscard]] constexpr size_type
 			find_first_not_of( const_pointer s ) const {
 				return find_first_not_of( basic_string_view<CharT, BoundsType>( s ),
 				                          0 );
+			}
+
+			template<size_type N>
+			[[nodiscard]] constexpr size_type
+			find_first_not_of( CharT const( &&s )[N] ) const {
+				return find_first_not_of(
+				  basic_string_view<CharT, BoundsType>( s, N - 1 ), 0 );
 			}
 
 			template<
