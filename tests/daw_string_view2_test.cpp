@@ -79,6 +79,24 @@ namespace daw {
 		daw::expecting( es, es2 );
 	}
 
+	constexpr void daw_string_view_find_last_of_002( ) {
+		auto a = daw::sv2::string_view( "abcdefghijklm" );
+		auto const pos = a.find_last_of( "", 0 );
+		daw::expecting( daw::sv2::string_view::npos, pos );
+	}
+
+	constexpr void daw_string_view_find_last_of_003( ) {
+		auto a = daw::sv2::string_view( );
+		auto const pos = a.find_last_of( "a" );
+		daw::expecting( daw::sv2::string_view::npos, pos );
+	}
+
+	constexpr void daw_string_view_find_last_of_004( ) {
+		auto a = daw::sv2::string_view( "this is a test" );
+		auto const pos = a.find_last_of( "a", 5 );
+		daw::expecting( 8U, pos );
+	}
+
 	constexpr void daw_string_view_find_first_of_if_001( ) {
 		daw::sv2::string_view const a = "abcdefghijklm";
 		auto pos = a.find_first_of_if( []( auto c ) { return c == 'c'; } );
@@ -95,6 +113,24 @@ namespace daw {
 		daw::sv2::string_view const a = "abcdefghijklm";
 		auto pos = a.find_first_of( "def" );
 		daw::expecting( 3U, pos );
+	}
+
+	constexpr void daw_string_view_find_first_of_002( ) {
+		daw::sv2::string_view const a = "abcdefghijklm";
+		auto pos = a.find_first_of( "def", 100 );
+		daw::expecting( daw::sv2::string_view::npos, pos );
+	}
+
+	constexpr void daw_string_view_find_first_of_003( ) {
+		daw::sv2::string_view const a = "abcdefghijklm";
+		auto pos = a.find_first_of( "" );
+		daw::expecting( daw::sv2::string_view::npos, pos );
+	}
+
+	constexpr void daw_string_view_find_first_of_004( ) {
+		daw::sv2::string_view const a = "abcdefghijklm";
+		auto pos = a.find_first_of( "x" );
+		daw::expecting( daw::sv2::string_view::npos, pos );
 	}
 
 	constexpr void daw_string_view_find_first_not_of_001( ) {
@@ -1078,15 +1114,34 @@ namespace daw {
 		static_assert(
 		  std::is_same_v<char32_t, typename decltype( sv_char32_t )::value_type> );
 	}
+
+	constexpr void daw_stdhash_test_001( ) {
+		std::hash<daw::sv2::string_view> h{ };
+		daw::sv2::string_view message = "Hello World!";
+		auto hash = h( message );
+		daw::expecting( std::size_t{ 0x8C0E'C8D1'FB9E'6E32ULL }, hash );
+	}
+
+	constexpr void daw_generichash_test_001( ) {
+		daw::sv2::string_view message = "Hello World!";
+		auto hash = daw::sv2::generic_hash( message );
+		daw::expecting( std::size_t{ 0x8C0E'C8D1'FB9E'6E32ULL }, hash );
+	}
 } // namespace daw
 
 int main( ) {
 	daw::expecting( daw::ensure_same_at_ct( ) );
 	daw::daw_string_view_constexpr_001( );
 	daw::daw_string_view_find_last_of_001( );
+	daw::daw_string_view_find_last_of_002( );
+	daw::daw_string_view_find_last_of_003( );
+	daw::daw_string_view_find_last_of_004( );
 	daw::daw_string_view_find_first_of_if_001( );
 	daw::daw_string_view_find_first_not_of_if_001( );
 	daw::daw_string_view_find_first_of_001( );
+	daw::daw_string_view_find_first_of_002( );
+	daw::daw_string_view_find_first_of_003( );
+	daw::daw_string_view_find_first_of_004( );
 	daw::daw_string_view_find_first_not_of_001( );
 	daw::daw_string_view_find_first_not_of_002( );
 	daw::daw_string_view_find_last_not_of_001( );
@@ -1151,4 +1206,6 @@ int main( ) {
 	daw::daw_try_pop_front_until_sv_test_002( );
 	daw::daw_diff_assignment_001( );
 	daw::daw_literal_test_001( );
+	daw::daw_stdhash_test_001( );
+	daw::daw_generichash_test_001( );
 }

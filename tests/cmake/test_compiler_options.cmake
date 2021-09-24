@@ -83,7 +83,8 @@ if (${CMAKE_CXX_COMPILER_ID} STREQUAL "Clang" OR ${CMAKE_CXX_COMPILER_ID} STREQU
     endif ()
 elseif (${CMAKE_CXX_COMPILER_ID} STREQUAL "GNU")
     if (DAW_USE_COVERAGE)
-        add_compile_options(-fprofile-instr-generate -fcoverage-mapping)
+        add_compile_options(-fprofile-arcs -ftest-coverage)
+        add_link_options(-lgcov)
     endif ()
     message("g++ ${CMAKE_CXX_COMPILER_VERSION} detected")
     add_compile_options(--param max-gcse-memory=260000000
