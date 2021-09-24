@@ -2,7 +2,7 @@ name: MacOS
 
 on:
   push:
-    branches: [ release, develop ]
+    branches: [ main, develop ]
   pull_request:
     push:
       branches-ignore: develop
