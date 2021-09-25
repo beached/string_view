@@ -16,7 +16,9 @@ namespace daw {
 		inline constexpr ptrdiff_t const dynamic_string_view_size = -1;
 		enum class string_view_bounds_type { pointer, size };
 
-#if defined( _MSC_VER ) and not defined( __clang__ )
+#if not defined( DAW_SV_USE_PTRPTR ) and                                       \
+  ( defined( DAW_SV_USE_PTRSIZE ) or                                           \
+    defined( _MSC_VER ) and not defined( __clang__ ) )
 		// MSVC has issues with the second item being a pointer
 		inline constexpr string_view_bounds_type default_string_view_bounds_type =
 		  string_view_bounds_type::size;
