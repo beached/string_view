@@ -41,13 +41,24 @@ namespace daw {
 		template<typename CharT, CharT... needles>
 		struct any_of_t {
 			inline constexpr bool operator( )( CharT c ) const {
-				return ( ( c == needles ) or ... );
+				return ( ( c == needles ) | ... );
 			}
 		};
 
 		template<auto needle, auto... needles>
 		inline static constexpr any_of_t<decltype( needle ), needle, needles...>
 		  any_of{ };
+
+		template<typename CharT, CharT... needles>
+		struct none_of_t {
+			inline constexpr bool operator( )( CharT c ) const {
+				return ( ( c != needles ) & ... );
+			}
+		};
+
+		template<auto needle, auto... needles>
+		inline static constexpr none_of_t<decltype( needle ), needle, needles...>
+		  none_of{ };
 
 		namespace sv2_details {
 			template<typename T>

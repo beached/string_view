@@ -13,6 +13,7 @@
 #include <cstdio>
 #include <cstdlib>
 #include <iostream>
+#include <sstream>
 #include <stdexcept>
 #include <string>
 
@@ -20,14 +21,21 @@
 #define daw_expecting( Lhs, Rhs )                                              \
 	do                                                                           \
 		if( ( Lhs ) != ( Rhs ) ) {                                                 \
-			throw std::logic_error( "Invalid result. Expecting true\n" );            \
+			throw [] {                                                               \
+				std::stringstream ss{ };                                               \
+				ss << "Invalid result. Expecting '" #Lhs << " == " #Rhs << "'\n"       \
+				   << "File: " << __FILE__ << "\nLine: " << __LINE__;                  \
+				return std::logic_error( ss.str( ) );                                  \
+			}( );                                                                    \
 		}                                                                          \
 	while( false )
 #else
 #define daw_expecting( Lhs, Rhs )                                              \
 	do                                                                           \
 		if( ( Lhs ) != ( Rhs ) ) {                                                 \
-			std::cerr << "Invalid result. Expecting true\n";                         \
+			std::cerr << "Invalid result. Expecting '" #Lhs << " == " #Rhs << "'\n"  \
+			          << "File: " << __FILE__ << "\nLine: " << __LINE__              \
+			          << std::endl;                                                  \
 			std::abort( );                                                           \
 		}                                                                          \
 	while( false )
@@ -37,14 +45,21 @@
 #define daw_expecting_message( Bool, Message )                                 \
 	do                                                                           \
 		if( not( Bool ) ) {                                                        \
-			throw std::logic_error( "" #Message );                                   \
+			std::stringstream ss{ };                                                 \
+			ss << "Invalid result. Expecting '" #Bool << "' to be true\n"            \
+			   << "Message: " #Message << "File: " << __FILE__                       \
+			   << "\nLine: " << __LINE__;                                            \
+			throw std::logic_error( ss.str( ) );                                     \
 		}                                                                          \
 	while( false )
 #else
 #define daw_expecting_message( Bool, Message )                                 \
 	do                                                                           \
 		if( not( Bool ) ) {                                                        \
-			std::cerr << "" #Message << '\n';                                        \
+			std::stringstream ss{ };                                                 \
+			std::cerr << "Invalid result. Expecting '" #Bool << "' to be true\n"     \
+			          << "Message: " #Message << "File: " << __FILE__                \
+			          << "\nLine: " << __LINE__ << std::endl;                        \
 			std::abort( );                                                           \
 		}                                                                          \
 	while( false )
