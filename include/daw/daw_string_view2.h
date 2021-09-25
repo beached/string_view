@@ -33,12 +33,6 @@
 
 #include <vector>
 
-#if defined( __cpp_consteval )
-#define CPP20CONSTEVAL consteval
-#else
-#define CPP20CONSTEVAL constexpr
-#endif
-
 namespace daw {
 	/*inline*/ namespace sv2 {
 		struct nodiscard_t {};
@@ -212,11 +206,11 @@ namespace daw {
 			// constructors
 			constexpr basic_string_view( ) noexcept = default;
 
-			CPP20CONSTEVAL basic_string_view( std::nullptr_t ) noexcept
+			constexpr basic_string_view( std::nullptr_t ) noexcept
 			  : m_first( nullptr )
 			  , m_last( make_last<BoundsType>( nullptr, nullptr ) ) {}
 
-			CPP20CONSTEVAL basic_string_view( std::nullptr_t, size_type n ) noexcept
+			constexpr basic_string_view( std::nullptr_t, size_type n ) noexcept
 			  : m_first( nullptr )
 			  , m_last( make_last<BoundsType>( nullptr, nullptr ) ) {
 				daw::exception::precondition_check(
@@ -261,8 +255,7 @@ namespace daw {
 			 * @param string_literal A string literal to create a view over
 			 */
 			template<size_type N>
-			CPP20CONSTEVAL
-			basic_string_view( CharT const ( &string_literal )[N] ) noexcept
+			constexpr basic_string_view( CharT const ( &string_literal )[N] ) noexcept
 			  : m_first( string_literal )
 			  , m_last( make_last<BoundsType>( string_literal, N - 1 ) ) {}
 
