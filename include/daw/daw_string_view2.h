@@ -38,6 +38,17 @@ namespace daw {
 		struct nodiscard_t {};
 		inline constexpr nodiscard_t nodiscard = nodiscard_t{ };
 
+		template<typename CharT, CharT... needles>
+		struct any_of_t {
+			inline constexpr bool operator( )( CharT c ) const {
+				return ( ( c == needles ) or ... );
+			}
+		};
+
+		template<auto needle, auto... needles>
+		inline static constexpr any_of_t<decltype( needle ), needle, needles...>
+		  any_of{ };
+
 		namespace sv2_details {
 			template<typename T>
 			constexpr std::size_t find_predicate_result_size( T ) {
@@ -466,10 +477,25 @@ namespace daw {
 			  std::enable_if_t<traits::is_unary_predicate_v<UnaryPredicate, CharT>,
 			                   std::nullptr_t> = nullptr>
 			[[nodiscard]] constexpr basic_string_view
-			pop_front_until( UnaryPredicate pred ) {
+			pop_front_until( UnaryPredicate pred, nodiscard_t ) {
 
 				auto pos = find_first_of_if( DAW_MOVE( pred ) );
-				auto result = pop_front( pos );
+				return pop_front( pos );
+			}
+
+			/// @brief creates a substr of the substr from begin to position
+			/// reported true by predicate
+			/// @tparam UnaryPredicate a unary predicate type that accepts a char
+			/// and indicates with true when to stop
+			/// @param pred predicate to determine where to split
+			/// @return substring from beginning to position marked by predicate
+			template<
+			  typename UnaryPredicate,
+			  std::enable_if_t<traits::is_unary_predicate_v<UnaryPredicate, CharT>,
+			                   std::nullptr_t> = nullptr>
+			[[nodiscard]] constexpr basic_string_view
+			pop_front_until( UnaryPredicate pred ) {
+				auto result = pop_front_until( pred, nodiscard );
 				remove_prefix( sv2_details::find_predicate_result_size( pred ) );
 				return result;
 			}
@@ -1480,8 +1506,9 @@ namespace daw {
 			return daw::fnv1a_hash( sv.data( ), sv.size( ) );
 		}
 
-		template<std::size_t HashSize = sizeof( daw::genhash_uint_t ), typename CharT,
-		         string_view_bounds_type Bounds, std::ptrdiff_t Extent>
+		template<std::size_t HashSize = sizeof( daw::genhash_uint_t ),
+		         typename CharT, string_view_bounds_type Bounds,
+		         std::ptrdiff_t Extent>
 		[[nodiscard]] constexpr size_t
 		generic_hash( daw::sv2::basic_string_view<CharT, Bounds, Extent> sv ) {
 			return daw::generic_hash<HashSize>( sv.data( ), sv.size( ) );

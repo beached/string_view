@@ -535,7 +535,7 @@ namespace daw {
 
 	void tc010accessor( ) {
 #if defined( DAW_USE_EXCEPTIONS )
-		const char *str = "Hello World";
+		constexpr char const str[] = "Hello World";
 		daw::sv2::string_view view = str;
 
 		puts( "Returns reference to entry at position" );
@@ -1085,6 +1085,12 @@ namespace daw {
 		daw_expecting( not daw::sv2::string_view{ }.ends_with( " " ), true );
 	}
 
+	void daw_can_be_string_view_ends_with_010( ) {
+		static constexpr char const *needle = "a";
+		daw_expecting(
+		  not daw::sv2::string_view{ "This is a test" }.ends_with( needle ), true );
+	}
+
 	void daw_pop_front_until_sv_test_001( ) {
 		std::string_view str = "This is a test";
 		auto sv = daw::sv2::string_view( str.data( ), str.size( ) );
@@ -1326,6 +1332,36 @@ namespace daw {
 		auto pos_sv = sv.find( "" );
 		daw_expecting( 0U, pos_sv );
 	}
+	namespace uri_test {
+		struct uri_parts {
+			daw::sv2::string_view scheme;
+			daw::sv2::string_view authority;
+			daw::sv2::string_view path;
+			daw::sv2::string_view query;
+			daw::sv2::string_view fragment;
+		};
+		// scheme://authority:port/path?query#fragment
+		uri_parts parse_uri( daw::sv2::string_view uri_string ) {
+			using namespace daw::sv2;
+			auto scheme = uri_string.pop_front_until( "://" );
+			auto authority =
+			  uri_string.pop_front_until( any_of<'/', '?', '#'>, nodiscard );
+			auto path = uri_string.pop_front_until( any_of<'?', '#'> );
+			auto query = uri_string.pop_front_until( '#' );
+
+			return { scheme, authority, path, query, uri_string };
+		}
+	} // namespace uri_test
+
+	void daw_test_any_char_001( ) {
+		auto [scheme, authority, path, query, fragment] =
+		  uri_test::parse_uri( "https://www.google.com?q=hello#line1" );
+		daw_expecting( scheme, "https" );
+		daw_expecting( authority, "www.google.com" );
+		daw_expecting( path, "" );
+		daw_expecting( query, "q=hello" );
+		daw_expecting( fragment, "line1" );
+	}
 } // namespace daw
 
 int main( )
@@ -1415,6 +1451,7 @@ int main( )
 	daw::daw_can_be_string_view_ends_with_007( );
 	daw::daw_can_be_string_view_ends_with_008( );
 	daw::daw_can_be_string_view_ends_with_009( );
+	daw::daw_can_be_string_view_ends_with_010( );
 	daw::daw_pop_front_test_001( );
 	daw::daw_pop_front_count_test_001( );
 	daw::daw_pop_front_until_sv_test_001( );
@@ -1440,6 +1477,7 @@ int main( )
 #if not defined( _MSC_VER ) or defined( __clang__ )
 	daw::daw_extent_to_dynamic_test_001( );
 	daw::daw_extent_test_001( );
+	daw::daw_test_any_char_001( );
 #endif
 }
 #if defined( DAW_USE_EXCEPTIONS )
