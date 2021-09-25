@@ -1451,10 +1451,6 @@ namespace daw {
 		  -> basic_string_view<CharT, default_string_view_bounds_type, N - 1>;
 		//
 		//
-
-
-		struct string_view : basic_string_view<char>
-
 		namespace string_view_literals {
 			[[nodiscard]] constexpr string_view
 			operator"" _sv( char const *str, std::size_t len ) noexcept {
