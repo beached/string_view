@@ -25,8 +25,15 @@ endif ()
 #Allows building all in some IDE's
 add_custom_target(full)
 
-add_executable( daw_string_view2_bin daw_string_view2_test.cpp )
-target_link_libraries(daw_string_view2_bin PRIVATE daw_test)
-add_test( daw_string_view2_test daw_string_view2_bin )
-add_dependencies(full daw_string_view2_bin )
+add_executable(daw_string_view2_ptrsize_bin daw_string_view2_test.cpp)
+target_link_libraries(daw_string_view2_ptrsize_bin PRIVATE daw_test)
+target_compile_definitions(daw_string_view2_ptrsize_bin PRIVATE -DDAW_SV_USE_PTRSIZE)
+add_test(daw_string_view2_ptrsize_test daw_string_view2_ptrsize_bin)
+add_dependencies(full daw_string_view2_ptrsize_bin)
+
+add_executable(daw_string_view2_ptrptr_bin daw_string_view2_test.cpp)
+target_link_libraries(daw_string_view2_ptrptr_bin PRIVATE daw_test)
+target_compile_definitions(daw_string_view2_ptrptr_bin PRIVATE -DDAW_SV_USE_PTRPTR)
+add_test(daw_string_view2_ptrptr_test daw_string_view2_ptrptr_bin)
+add_dependencies(full daw_string_view2_ptrptr_bin)
 
