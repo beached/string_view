@@ -1475,12 +1475,12 @@ namespace daw {
 
 		template<typename CharT, string_view_bounds_type Bounds,
 		         std::ptrdiff_t Extent>
-		[[nodiscard]] constexpr size_t
+		[[nodiscard]] constexpr auto
 		fnv1a_hash( daw::sv2::basic_string_view<CharT, Bounds, Extent> sv ) {
 			return daw::fnv1a_hash( sv.data( ), sv.size( ) );
 		}
 
-		template<std::size_t HashSize = sizeof( std::size_t ), typename CharT,
+		template<std::size_t HashSize = sizeof( daw::genhash_uint_t ), typename CharT,
 		         string_view_bounds_type Bounds, std::ptrdiff_t Extent>
 		[[nodiscard]] constexpr size_t
 		generic_hash( daw::sv2::basic_string_view<CharT, Bounds, Extent> sv ) {

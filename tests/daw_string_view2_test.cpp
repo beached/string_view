@@ -1236,13 +1236,21 @@ namespace daw {
 		std::hash<daw::sv2::string_view> h{ };
 		daw::sv2::string_view message = "Hello World!";
 		auto hash = h( message );
-		daw::expecting( std::uint64_t{ 0x8C0E'C8D1'FB9E'6E32ULL }, hash );
+		if constexpr( daw::impl::is_64bit_v ) {
+			daw::expecting( std::uint64_t{ 0x8C0E'C8D1'FB9E'6E32ULL }, hash );
+		} else {
+			daw::expecting( std::uint32_t{ 0xB1EA'4872ULL }, hash );
+		}
 	}
 
 	void daw_generichash_test_001( ) {
 		daw::sv2::string_view message = "Hello World!";
 		auto hash = daw::sv2::generic_hash( message );
-		daw::expecting( std::uint64_t{ 0x8C0E'C8D1'FB9E'6E32ULL }, hash );
+		if constexpr( daw::impl::is_64bit_v ) {
+			daw::expecting( std::uint64_t{ 0x8C0E'C8D1'FB9E'6E32ULL }, hash );
+		} else {
+			daw::expecting( std::uint32_t{ 0xB1EA'4872ULL }, hash );
+		}
 	}
 
 	void daw_rfind_test_001( ) {
