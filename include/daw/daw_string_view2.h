@@ -8,6 +8,8 @@
 
 #pragma once
 
+#include "daw_string_view2_fwd.h"
+
 #include <daw/daw_algorithm.h>
 #include <daw/daw_cpp_feature_check.h>
 #include <daw/daw_exception.h>
@@ -15,7 +17,6 @@
 #include <daw/daw_generic_hash.h>
 #include <daw/daw_math.h>
 #include <daw/daw_move.h>
-#include <daw/daw_string_view2_fwd.h>
 #include <daw/daw_swap.h>
 #include <daw/daw_traits.h>
 #include <daw/impl/daw_string_impl.h>
@@ -1450,6 +1451,9 @@ namespace daw {
 		  -> basic_string_view<CharT, default_string_view_bounds_type, N - 1>;
 		//
 		//
+
+
+		struct string_view : basic_string_view<char>
 
 		namespace string_view_literals {
 			[[nodiscard]] constexpr string_view
