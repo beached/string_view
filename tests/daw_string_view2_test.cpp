@@ -1282,7 +1282,11 @@ namespace daw {
 	}
 } // namespace daw
 
-int main( ) {
+int main( )
+#if defined( DAW_USE_EXCEPTIONS )
+  try
+#endif
+{
 	daw::expecting( daw::ensure_same_at_ct( ) );
 	daw::daw_string_view_constexpr_001( );
 	daw::daw_string_view_find_last_of_001( );
@@ -1394,3 +1398,15 @@ int main( ) {
 	daw::daw_extent_test_001( );
 #endif
 }
+#if defined( DAW_USE_EXCEPTIONS )
+catch( std::exception const &ex ) {
+	std::cerr << "An unexpected exception was thrown: " << typeid( ex ).name( )
+	          << '\n'
+	          << ex.what( ) << '\n'
+	          << std::flush;
+	exit( 1 );
+} catch( ... ) {
+	std::cerr << "An unknown exception was thrown\n" << std::flush;
+	throw;
+}
+#endif
