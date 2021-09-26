@@ -13,7 +13,6 @@
 
 namespace daw {
 	namespace sv2 {
-		inline constexpr ptrdiff_t const dynamic_string_view_size = -1;
 		enum class string_view_bounds_type { pointer, size };
 
 #if not defined( DAW_SV_USE_PTRPTR ) and                                       \
@@ -27,10 +26,8 @@ namespace daw {
 		  string_view_bounds_type::pointer;
 #endif
 
-		template<typename CharT,
-		         string_view_bounds_type BoundsType =
-		           default_string_view_bounds_type,
-		         std::ptrdiff_t Extent = dynamic_string_view_size>
+		template<typename CharT, string_view_bounds_type BoundsType =
+		                           default_string_view_bounds_type>
 		struct basic_string_view;
 
 		using string_view = basic_string_view<char>;

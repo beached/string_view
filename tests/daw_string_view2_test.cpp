@@ -1206,36 +1206,6 @@ namespace daw {
 		s.remove_prefix( );
 	}
 
-// Workaround
-#if not defined( _MSC_VER ) or defined( __clang__ )
-	static_assert(
-	  decltype( sv2::basic_string_view( "This is a test" ) )::extent == 14 );
-
-	template<size_t N>
-	constexpr bool extent_test_001( char const ( &str )[N] ) noexcept {
-		sv2::basic_string_view sv( str );
-		return decltype( sv )::extent >= 0;
-	}
-	void daw_extent_test_001( ) {
-		daw_expecting( extent_test_001( "this is a test" ), true );
-	}
-	static_assert( extent_test_001( "this is a test" ) );
-
-	template<size_t N>
-	constexpr bool extent_to_dynamic_001( char const ( &str )[N] ) noexcept {
-		sv2::basic_string_view sv( str );
-		sv2::string_view svb{ };
-		svb = sv;
-		(void)svb;
-		return decltype( sv )::extent >= 0 and
-		       decltype( svb )::extent == daw::dynamic_string_size;
-	}
-	static_assert( extent_to_dynamic_001( "Testing testing 1 2 3" ) );
-	void daw_extent_to_dynamic_test_001( ) {
-		daw_expecting( extent_to_dynamic_001( "Testing testing 1 2 3" ), true );
-	}
-#endif
-
 	constexpr bool ensure_same_at_ct( ) {
 		constexpr daw::sv2::string_view sv_cx = "a";
 		static_assert( sv_cx.size( ) == 1 );
@@ -1256,8 +1226,11 @@ namespace daw {
 
 	void daw_diff_assignment_001( ) {
 #if not defined( _MSC_VER ) or defined( __clang__ )
-		daw::sv2::basic_string_view a = "This is a test";
-		daw::sv2::string_view b = "Hello";
+		daw::sv2::basic_string_view<char, daw::sv2::string_view_bounds_type::size>
+		  a = "This is a test";
+		daw::sv2::basic_string_view<char,
+		                            daw::sv2::string_view_bounds_type::pointer>
+		  b = "Hello";
 		daw_expecting_message( a != b, "Expected equal" );
 		static_assert( not std::is_same_v<decltype( a ), decltype( b )> );
 		// Should have different types
@@ -1596,9 +1569,7 @@ int main( )
 	daw::daw_find_test_001( );
 	daw::daw_find_test_002( );
 	daw::daw_find_test_003( );
-#if not defined( _MSC_VER ) or defined( __clang__ )
-	daw::daw_extent_to_dynamic_test_001( );
-	daw::daw_extent_test_001( );
+	//#if not defined( _MSC_VER ) or defined( __clang__ )
 	daw::daw_test_any_char_001( );
 	daw::daw_remove_prefix_num_test_001( );
 	daw::daw_remove_prefix_num_test_002( );
@@ -1606,7 +1577,7 @@ int main( )
 	daw::daw_remove_prefix_until_test_001( );
 	daw::daw_remove_prefix_until_test_002( );
 	daw::daw_arbutrary_string_view_list_001( );
-#endif
+	//#endif
 }
 #if defined( DAW_USE_EXCEPTIONS )
 catch( std::exception const &ex ) {
