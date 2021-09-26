@@ -1107,8 +1107,7 @@ namespace daw {
 	}
 
 	void daw_pop_front_until_sv_test_001( ) {
-		std::string_view str = "This is a test";
-		auto sv = daw::sv2::string_view( str.data( ), str.size( ) );
+		daw::sv2::string_view sv = "This is a test";
 		daw_expecting( "This"_sv, sv.pop_front_until( " " ) );
 		daw_expecting( "is"_sv, sv.pop_front_until( " " ) );
 		daw_expecting( "a"_sv, sv.pop_front_until( " " ) );
@@ -1480,10 +1479,11 @@ namespace daw {
 	};
 
 	void daw_arbutrary_string_view_list_001( ) {
-		char const foo[] = "Hello world";
-		auto sv = FooSV{ std::data( foo ), std::size( foo ) - 1 };
-		daw::sv2::string_view sv2 = sv;
-		daw_expecting( sv2, "Hello World" );
+		daw::sv2::string_view sv = "Hello world";
+		auto foo = FooSV{ std::data( sv ), std::size( sv ) };
+		daw::sv2::string_view svfoo = foo;
+		daw_expecting( svfoo.size( ), sv.size( ) );
+		daw_expecting( svfoo, sv );
 	}
 } // namespace daw
 

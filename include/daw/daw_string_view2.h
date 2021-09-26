@@ -561,11 +561,10 @@ namespace daw {
 			}
 
 			/// @brief Increment the data( ) pointer by 1.
-			/// @pre size( ) >= 1
 			/// @return front( ) prior to increment
 			[[nodiscard]] constexpr CharT pop_front( ) {
 				auto result = front( );
-				dec_front<BoundsType>( size_type{ 1U } );
+				remove_prefix( 1U );
 				return result;
 			}
 
@@ -573,11 +572,10 @@ namespace daw {
 			/// string_view that would be formed formed from the previous and
 			/// current data( ) pointer values.
 			/// @param count number of characters to increment data( ) by
-			/// @pre size( ) >= count
 			/// @return a new string_view of size count.
 			[[nodiscard]] constexpr basic_string_view pop_front( size_type count ) {
 				basic_string_view result = substr( 0, count );
-				dec_front<BoundsType>( count );
+				remove_prefix( count );
 				return result;
 			}
 
