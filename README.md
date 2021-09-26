@@ -2,9 +2,10 @@
 
 An enhanced string_view implementation with parsing helpers.
 
-## BNF like code
+## Additions not in std::string_view
 
-One can build simple parsers quickly via methods like `parse_front_until`
+One can build simple BNF like parsers quickly via methods like `parse_front_until`. The interface supports predicates
+which have a couple predefined predicates `any_of<Char...>` and `none_of<Char...>`.
 
 ```c++
 struct uri_parts {
@@ -15,7 +16,7 @@ struct uri_parts {
    string_view fragment;
 };
 // scheme://authority:port/path/?query#fragment
-uri_parts parse_uri( string_view uri_string ) {
+uri_parts parse_url( string_view uri_string ) {
     return {
        /* scheme    */ uri_string.pop_fron_until( "://" ),
        /* authority */ uri_string.pop_front_until( any_of<'/', '?', '#'>, nodiscard ),
@@ -24,5 +25,13 @@ uri_parts parse_uri( string_view uri_string ) {
        /* fragment  */ uri_string
     };
 }
-
 ```
+By default the `pop_front_until` methods will discard the delimiter.  This behaviour can be controlled by supplying an addition parameter `nodiscard`.  The result being that the delimiter is left in the original `string_view`
+# Storage of end of range
+The storage of the start/end of the string range is optimized, by default, for a `remove_prefix` like work load.  There are two schemes, pointer/pointer(the default) and pointer/size_t.  They are optionally changed via the second template parameter for basic_string_view with the enumeration `string_view_bounds_type { pointer, size }`.  With pointer/pointer, a remove_prefix only has to mutate the start of range pointer, not the end of range.  However, this means that the calculation of `size( )` is a subtraction.
+
+# Construction via null pointers
+The range formed by the pair (nullptr, nullptr) or (nullptr, 0) is a valid empty range.  It is useful for indicating no value and is often returned by c-api methods as a no-value return.  With that, the constructor `string_view( const_pointer )` will check for null and form an empty string range with `data( ) == nullptr` and `size( ) == 0`.  In many cases this check will be elided by compilers or is small compared to the cost of a `strlen` like call.
+
+# Remove prefix
+Remove prefix will default to removing 1 element from range.  

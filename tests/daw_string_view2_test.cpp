@@ -1302,16 +1302,6 @@ namespace daw {
 		}
 	}
 
-	void daw_generichash_test_001( ) {
-		daw::sv2::string_view message = "Hello World!";
-		auto hash = daw::sv2::generic_hash( message );
-		if constexpr( daw::impl::is_64bit_v ) {
-			daw_expecting( std::uint64_t{ 0x8C0E'C8D1'FB9E'6E32ULL }, hash );
-		} else {
-			daw_expecting( std::uint32_t{ 0xB1EA'4872ULL }, hash );
-		}
-	}
-
 	void daw_rfind_test_001( ) {
 		daw::sv2::string_view const sv = "This is a string";
 		auto pos_sv = sv.rfind( "is" );
@@ -1347,35 +1337,153 @@ namespace daw {
 		auto pos_sv = sv.find( "" );
 		daw_expecting( 0U, pos_sv );
 	}
-	namespace uri_test {
+	namespace url_test {
+		struct authority_t {
+			daw::sv2::string_view host;
+			daw::sv2::string_view port;
+
+			constexpr authority_t( daw::sv2::string_view sv ) noexcept
+			  : host( sv.pop_front_until( ':' ) )
+			  , port( sv ) {}
+
+			constexpr authority_t( daw::sv2::string_view h,
+			                       daw::sv2::string_view p ) noexcept
+			  : host( h )
+			  , port( p ) {}
+
+			constexpr bool operator==( authority_t const &rhs ) const {
+				return host == rhs.host and ( ( port == rhs.port ) or
+				                              ( port == "80" and rhs.port.empty( ) ) or
+				                              ( port.empty( ) and rhs.port == "80" ) );
+			}
+
+			constexpr bool operator!=( authority_t const &rhs ) const {
+				return not operator==( rhs );
+			}
+		};
+
+		struct query_t {
+			std::map<daw::sv2::string_view, daw::sv2::string_view> items{ };
+
+			query_t( ) = default;
+
+			explicit query_t( daw::sv2::string_view sv ) {
+				while( not sv.empty( ) ) {
+					auto p = sv.pop_front_until( '&' );
+					items.insert( std::pair{ p.pop_front_until( '=' ), p } );
+				}
+			}
+
+			inline explicit query_t(
+			  std::initializer_list<
+			    std::pair<daw::sv2::string_view, daw::sv2::string_view>>
+			    qparts )
+			  : items( qparts.begin( ), qparts.end( ) ) {}
+
+			inline bool operator==( query_t const &rhs ) const {
+				return items == rhs.items;
+			}
+
+			inline bool operator!=( query_t const &rhs ) const {
+				return not operator==( rhs );
+			}
+		};
+
 		struct uri_parts {
 			daw::sv2::string_view scheme;
-			daw::sv2::string_view authority;
+			authority_t authority;
 			daw::sv2::string_view path;
-			daw::sv2::string_view query;
+			query_t query;
 			daw::sv2::string_view fragment;
 		};
 		// scheme://authority:port/path?query#fragment
-		uri_parts parse_uri( daw::sv2::string_view uri_string ) {
+		uri_parts parse_url( daw::sv2::string_view uri_string ) {
 			using namespace daw::sv2;
 			auto scheme = uri_string.pop_front_until( "://" );
 			auto authority =
 			  uri_string.pop_front_until( any_of<'/', '?', '#'>, nodiscard );
 			auto path = uri_string.pop_front_until( any_of<'?', '#'> );
-			auto query = uri_string.pop_front_until( '#' );
+			auto query = query_t( uri_string.pop_front_until( '#' ) );
 
 			return { scheme, authority, path, query, uri_string };
 		}
-	} // namespace uri_test
+	} // namespace url_test
 
 	void daw_test_any_char_001( ) {
+		using namespace daw::sv2::string_view_literals;
 		auto [scheme, authority, path, query, fragment] =
-		  uri_test::parse_uri( "https://www.google.com?q=hello#line1" );
+		  url_test::parse_url( "https://www.google.com?q=hello#line1" );
+		constexpr auto expected_authority =
+		  url_test::authority_t( "www.google.com", "" );
+		auto const expected_query =
+		  url_test::query_t( { std::pair{ "q"_sv, "hello"_sv } } );
 		daw_expecting( scheme, "https" );
-		daw_expecting( authority, "www.google.com" );
+		daw_expecting( authority, expected_authority );
 		daw_expecting( path, "" );
-		daw_expecting( query, "q=hello" );
+		daw_expecting( query, expected_query );
 		daw_expecting( fragment, "line1" );
+	}
+
+	void daw_remove_prefix_num_test_001( ) {
+		daw::sv2::string_view sv = "0123456789";
+		sv.remove_prefix( 4 );
+		daw_expecting( sv.size( ), 6U );
+		daw_expecting( sv.front( ), '4' );
+	}
+
+	void daw_remove_prefix_num_test_002( ) {
+		daw::sv2::string_view sv = "0123456789";
+		sv.remove_prefix( 1000 );
+		daw_expecting( sv.empty( ), true );
+	}
+
+	void daw_remove_prefix_num_test_003( ) {
+		daw::sv2::string_view sv = "0123456789";
+		auto const sv_orig = sv;
+		sv.remove_prefix( 0 );
+		daw_expecting( sv, sv_orig );
+	}
+
+	void daw_remove_prefix_until_test_001( ) {
+		daw::sv2::string_view sv = "0123456789";
+		sv.remove_prefix_until( '5' );
+		daw_expecting( sv.size( ), 4U );
+		daw_expecting( sv.front( ), '6' );
+	}
+
+	void daw_remove_prefix_until_test_002( ) {
+		daw::sv2::string_view sv = "0123456789";
+		sv.remove_prefix_until( '5', daw::sv2::nodiscard );
+		daw_expecting( sv.size( ), 5U );
+		daw_expecting( sv.front( ), '5' );
+	}
+
+	void daw_remove_prefix_until_test_003( ) {
+		daw::sv2::string_view sv = "This is a test";
+		sv.remove_prefix_until( daw::sv2::any_of<' ', '\n', '\t'> );
+		daw_expecting( sv.size( ), 9U );
+		daw_expecting( sv, "is a test" );
+	}
+	struct FooSV {
+		using iterator = char const *;
+		using size_type = std::size_t;
+		iterator p;
+		size_type s;
+
+		constexpr iterator data( ) const {
+			return p;
+		}
+
+		constexpr size_type size( ) const {
+			return s;
+		}
+	};
+
+	void daw_arbutrary_string_view_list_001( ) {
+		char const foo[] = "Hello world";
+		auto sv = FooSV{ std::data( foo ), std::size( foo ) - 1 };
+		daw::sv2::string_view sv2 = sv;
+		daw_expecting( sv2, "Hello World" );
 	}
 } // namespace daw
 
@@ -1482,7 +1590,6 @@ int main( )
 	daw::daw_diff_assignment_001( );
 	daw::daw_literal_test_001( );
 	daw::daw_stdhash_test_001( );
-	daw::daw_generichash_test_001( );
 	daw::daw_rfind_test_001( );
 	daw::daw_rfind_test_002( );
 	daw::daw_rfind_test_003( );
@@ -1493,6 +1600,12 @@ int main( )
 	daw::daw_extent_to_dynamic_test_001( );
 	daw::daw_extent_test_001( );
 	daw::daw_test_any_char_001( );
+	daw::daw_remove_prefix_num_test_001( );
+	daw::daw_remove_prefix_num_test_002( );
+	daw::daw_remove_prefix_num_test_003( );
+	daw::daw_remove_prefix_until_test_001( );
+	daw::daw_remove_prefix_until_test_002( );
+	daw::daw_arbutrary_string_view_list_001( );
 #endif
 }
 #if defined( DAW_USE_EXCEPTIONS )
