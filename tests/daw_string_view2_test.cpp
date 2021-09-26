@@ -13,6 +13,7 @@
 #include <cstdio>
 #include <cstdlib>
 #include <iostream>
+#include <sstream>
 #include <stdexcept>
 #include <string>
 
@@ -20,14 +21,21 @@
 #define daw_expecting( Lhs, Rhs )                                              \
 	do                                                                           \
 		if( ( Lhs ) != ( Rhs ) ) {                                                 \
-			throw std::logic_error( "Invalid result. Expecting true\n" );            \
+			throw [] {                                                               \
+				std::stringstream ss{ };                                               \
+				ss << "Invalid result. Expecting '" #Lhs << " == " #Rhs << "'\n"       \
+				   << "File: " << __FILE__ << "\nLine: " << __LINE__;                  \
+				return std::logic_error( ss.str( ) );                                  \
+			}( );                                                                    \
 		}                                                                          \
 	while( false )
 #else
 #define daw_expecting( Lhs, Rhs )                                              \
 	do                                                                           \
 		if( ( Lhs ) != ( Rhs ) ) {                                                 \
-			std::cerr << "Invalid result. Expecting true\n";                         \
+			std::cerr << "Invalid result. Expecting '" #Lhs << " == " #Rhs << "'\n"  \
+			          << "File: " << __FILE__ << "\nLine: " << __LINE__              \
+			          << std::endl;                                                  \
 			std::abort( );                                                           \
 		}                                                                          \
 	while( false )
@@ -37,14 +45,21 @@
 #define daw_expecting_message( Bool, Message )                                 \
 	do                                                                           \
 		if( not( Bool ) ) {                                                        \
-			throw std::logic_error( "" #Message );                                   \
+			std::stringstream ss{ };                                                 \
+			ss << "Invalid result. Expecting '" #Bool << "' to be true\n"            \
+			   << "Message: " #Message << "File: " << __FILE__                       \
+			   << "\nLine: " << __LINE__;                                            \
+			throw std::logic_error( ss.str( ) );                                     \
 		}                                                                          \
 	while( false )
 #else
 #define daw_expecting_message( Bool, Message )                                 \
 	do                                                                           \
 		if( not( Bool ) ) {                                                        \
-			std::cerr << "" #Message << '\n';                                        \
+			std::stringstream ss{ };                                                 \
+			std::cerr << "Invalid result. Expecting '" #Bool << "' to be true\n"     \
+			          << "Message: " #Message << "File: " << __FILE__                \
+			          << "\nLine: " << __LINE__ << std::endl;                        \
 			std::abort( );                                                           \
 		}                                                                          \
 	while( false )
@@ -535,7 +550,7 @@ namespace daw {
 
 	void tc010accessor( ) {
 #if defined( DAW_USE_EXCEPTIONS )
-		const char *str = "Hello World";
+		constexpr char const str[] = "Hello World";
 		daw::sv2::string_view view = str;
 
 		puts( "Returns reference to entry at position" );
@@ -1085,9 +1100,14 @@ namespace daw {
 		daw_expecting( not daw::sv2::string_view{ }.ends_with( " " ), true );
 	}
 
+	void daw_can_be_string_view_ends_with_010( ) {
+		static constexpr char const *needle = "a";
+		daw_expecting(
+		  not daw::sv2::string_view{ "This is a test" }.ends_with( needle ), true );
+	}
+
 	void daw_pop_front_until_sv_test_001( ) {
-		std::string_view str = "This is a test";
-		auto sv = daw::sv2::string_view( str.data( ), str.size( ) );
+		daw::sv2::string_view sv = "This is a test";
 		daw_expecting( "This"_sv, sv.pop_front_until( " " ) );
 		daw_expecting( "is"_sv, sv.pop_front_until( " " ) );
 		daw_expecting( "a"_sv, sv.pop_front_until( " " ) );
@@ -1281,16 +1301,6 @@ namespace daw {
 		}
 	}
 
-	void daw_generichash_test_001( ) {
-		daw::sv2::string_view message = "Hello World!";
-		auto hash = daw::sv2::generic_hash( message );
-		if constexpr( daw::impl::is_64bit_v ) {
-			daw_expecting( std::uint64_t{ 0x8C0E'C8D1'FB9E'6E32ULL }, hash );
-		} else {
-			daw_expecting( std::uint32_t{ 0xB1EA'4872ULL }, hash );
-		}
-	}
-
 	void daw_rfind_test_001( ) {
 		daw::sv2::string_view const sv = "This is a string";
 		auto pos_sv = sv.rfind( "is" );
@@ -1325,6 +1335,155 @@ namespace daw {
 		daw::sv2::string_view const sv = "This is a string";
 		auto pos_sv = sv.find( "" );
 		daw_expecting( 0U, pos_sv );
+	}
+	namespace url_test {
+		struct authority_t {
+			daw::sv2::string_view host;
+			daw::sv2::string_view port;
+
+			constexpr authority_t( daw::sv2::string_view sv ) noexcept
+			  : host( sv.pop_front_until( ':' ) )
+			  , port( sv ) {}
+
+			constexpr authority_t( daw::sv2::string_view h,
+			                       daw::sv2::string_view p ) noexcept
+			  : host( h )
+			  , port( p ) {}
+
+			constexpr bool operator==( authority_t const &rhs ) const {
+				return host == rhs.host and ( ( port == rhs.port ) or
+				                              ( port == "80" and rhs.port.empty( ) ) or
+				                              ( port.empty( ) and rhs.port == "80" ) );
+			}
+
+			constexpr bool operator!=( authority_t const &rhs ) const {
+				return not operator==( rhs );
+			}
+		};
+
+		struct query_t {
+			std::map<daw::sv2::string_view, daw::sv2::string_view> items{ };
+
+			query_t( ) = default;
+
+			explicit query_t( daw::sv2::string_view sv ) {
+				while( not sv.empty( ) ) {
+					auto p = sv.pop_front_until( '&' );
+					items.insert( std::pair{ p.pop_front_until( '=' ), p } );
+				}
+			}
+
+			inline explicit query_t(
+			  std::initializer_list<
+			    std::pair<daw::sv2::string_view, daw::sv2::string_view>>
+			    qparts )
+			  : items( qparts.begin( ), qparts.end( ) ) {}
+
+			inline bool operator==( query_t const &rhs ) const {
+				return items == rhs.items;
+			}
+
+			inline bool operator!=( query_t const &rhs ) const {
+				return not operator==( rhs );
+			}
+		};
+
+		struct uri_parts {
+			daw::sv2::string_view scheme;
+			authority_t authority;
+			daw::sv2::string_view path;
+			query_t query;
+			daw::sv2::string_view fragment;
+		};
+		// scheme://authority:port/path?query#fragment
+		uri_parts parse_url( daw::sv2::string_view uri_string ) {
+			using namespace daw::sv2;
+			auto scheme = uri_string.pop_front_until( "://" );
+			auto authority =
+			  uri_string.pop_front_until( any_of<'/', '?', '#'>, nodiscard );
+			auto path = uri_string.pop_front_until( any_of<'?', '#'> );
+			auto query = query_t( uri_string.pop_front_until( '#' ) );
+
+			return { scheme, authority, path, query, uri_string };
+		}
+	} // namespace url_test
+
+	void daw_test_any_char_001( ) {
+		using namespace daw::sv2::string_view_literals;
+		auto [scheme, authority, path, query, fragment] =
+		  url_test::parse_url( "https://www.google.com?q=hello#line1" );
+		constexpr auto expected_authority =
+		  url_test::authority_t( "www.google.com", "" );
+		auto const expected_query =
+		  url_test::query_t( { std::pair{ "q"_sv, "hello"_sv } } );
+		daw_expecting( scheme, "https" );
+		daw_expecting( authority, expected_authority );
+		daw_expecting( path, "" );
+		daw_expecting( query, expected_query );
+		daw_expecting( fragment, "line1" );
+	}
+
+	void daw_remove_prefix_num_test_001( ) {
+		daw::sv2::string_view sv = "0123456789";
+		sv.remove_prefix( 4 );
+		daw_expecting( sv.size( ), 6U );
+		daw_expecting( sv.front( ), '4' );
+	}
+
+	void daw_remove_prefix_num_test_002( ) {
+		daw::sv2::string_view sv = "0123456789";
+		sv.remove_prefix( 1000 );
+		daw_expecting( sv.empty( ), true );
+	}
+
+	void daw_remove_prefix_num_test_003( ) {
+		daw::sv2::string_view sv = "0123456789";
+		auto const sv_orig = sv;
+		sv.remove_prefix( 0 );
+		daw_expecting( sv, sv_orig );
+	}
+
+	void daw_remove_prefix_until_test_001( ) {
+		daw::sv2::string_view sv = "0123456789";
+		sv.remove_prefix_until( '5' );
+		daw_expecting( sv.size( ), 4U );
+		daw_expecting( sv.front( ), '6' );
+	}
+
+	void daw_remove_prefix_until_test_002( ) {
+		daw::sv2::string_view sv = "0123456789";
+		sv.remove_prefix_until( '5', daw::sv2::nodiscard );
+		daw_expecting( sv.size( ), 5U );
+		daw_expecting( sv.front( ), '5' );
+	}
+
+	void daw_remove_prefix_until_test_003( ) {
+		daw::sv2::string_view sv = "This is a test";
+		sv.remove_prefix_until( daw::sv2::any_of<' ', '\n', '\t'> );
+		daw_expecting( sv.size( ), 9U );
+		daw_expecting( sv, "is a test" );
+	}
+	struct FooSV {
+		using iterator = char const *;
+		using size_type = std::size_t;
+		iterator p;
+		size_type s;
+
+		constexpr iterator data( ) const {
+			return p;
+		}
+
+		constexpr size_type size( ) const {
+			return s;
+		}
+	};
+
+	void daw_arbutrary_string_view_list_001( ) {
+		daw::sv2::string_view sv = "Hello world";
+		auto foo = FooSV{ std::data( sv ), std::size( sv ) };
+		daw::sv2::string_view svfoo = foo;
+		daw_expecting( svfoo.size( ), sv.size( ) );
+		daw_expecting( svfoo, sv );
 	}
 } // namespace daw
 
@@ -1415,6 +1574,7 @@ int main( )
 	daw::daw_can_be_string_view_ends_with_007( );
 	daw::daw_can_be_string_view_ends_with_008( );
 	daw::daw_can_be_string_view_ends_with_009( );
+	daw::daw_can_be_string_view_ends_with_010( );
 	daw::daw_pop_front_test_001( );
 	daw::daw_pop_front_count_test_001( );
 	daw::daw_pop_front_until_sv_test_001( );
@@ -1430,7 +1590,6 @@ int main( )
 	daw::daw_diff_assignment_001( );
 	daw::daw_literal_test_001( );
 	daw::daw_stdhash_test_001( );
-	daw::daw_generichash_test_001( );
 	daw::daw_rfind_test_001( );
 	daw::daw_rfind_test_002( );
 	daw::daw_rfind_test_003( );
@@ -1440,6 +1599,13 @@ int main( )
 #if not defined( _MSC_VER ) or defined( __clang__ )
 	daw::daw_extent_to_dynamic_test_001( );
 	daw::daw_extent_test_001( );
+	daw::daw_test_any_char_001( );
+	daw::daw_remove_prefix_num_test_001( );
+	daw::daw_remove_prefix_num_test_002( );
+	daw::daw_remove_prefix_num_test_003( );
+	daw::daw_remove_prefix_until_test_001( );
+	daw::daw_remove_prefix_until_test_002( );
+	daw::daw_arbutrary_string_view_list_001( );
 #endif
 }
 #if defined( DAW_USE_EXCEPTIONS )
