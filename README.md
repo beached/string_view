@@ -2,7 +2,7 @@
 
 An enhanced string_view implementation with parsing helpers.
 
-[API Documentation](docs/api_docs/html/index.html)
+[API Documentation](https://beached.github.io/string_view/api_docs/html/structdaw_1_1sv2_1_1basic__string__view.html)
 
 ## Additions not in std::string_view
 
