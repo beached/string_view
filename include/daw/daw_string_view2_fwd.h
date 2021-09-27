@@ -9,16 +9,22 @@
 #pragma once
 
 #include <ciso646>
-#include <cstddef>
 
 namespace daw {
 	namespace sv2 {
-		enum class string_view_bounds_type { pointer, size };
+		/// @brief How is the end of range stored in string_view
+		enum class string_view_bounds_type {
+			/// @brief Store the end of range as a pointer. This is optimal for code
+			/// where calls to methods like remove_prefix dominate
+			pointer,
+			/// @brief Store the end of range as a size_type.  This is optimal for
+			/// where calls to size( ) or remove_suffix like calls dominate
+			size
+		};
 
-#if not defined( DAW_SV_USE_PTRPTR ) and                                       \
-  ( defined( DAW_SV_USE_PTRSIZE ) or                                           \
-    defined( _MSC_VER ) and not defined( __clang__ ) )
-		// MSVC has issues with the second item being a pointer
+#if defined( _MSC_VER ) or defined( DAW_SV_USE_PTRSIZE )
+		// MSVC has issues with pointers to the trailing zero in a string literal at
+		// compile time
 		inline constexpr string_view_bounds_type default_string_view_bounds_type =
 		  string_view_bounds_type::size;
 #else
@@ -26,6 +32,9 @@ namespace daw {
 		  string_view_bounds_type::pointer;
 #endif
 
+		/// @brief The class template basic_string_view describes an object that can
+		/// refer to a constant contiguous sequence of char-like objects with the
+		/// first element of the sequence at position zero.
 		template<typename CharT, string_view_bounds_type BoundsType =
 		                           default_string_view_bounds_type>
 		struct basic_string_view;
