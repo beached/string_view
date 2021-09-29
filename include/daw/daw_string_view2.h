@@ -913,18 +913,19 @@ namespace daw {
 			}
 
 		public:
-			template<string_view_bounds_type BL, string_view_bounds_type BR>
+			template<typename Compare = std::less<void>, string_view_bounds_type BL,
+			         string_view_bounds_type BR>
 			[[nodiscard]] static constexpr int
 			compare( basic_string_view<CharT, BL> lhs,
-			         basic_string_view<CharT, BR> rhs ) {
-				auto const str_compare = []( CharT const *p0, CharT const *p1,
-				                             size_type len ) {
+			         basic_string_view<CharT, BR> rhs, Compare cmp = Compare{ } ) {
+				constexpr auto const str_compare = []( CharT const *p0, CharT const *p1,
+				                                       size_type len, Compare &c ) {
 					auto const last = p0 + len;
 					while( p0 != last ) {
-						if( *p0 != *p1 ) {
-							if( *p0 < *p1 ) {
-								return -1;
-							}
+						if( c( *p0, *p1 ) ) {
+							return -1;
+						}
+						if( c( *p1, *p0 ) ) {
 							return 1;
 						}
 						++p0;
@@ -933,9 +934,10 @@ namespace daw {
 					return 0;
 				};
 
-				auto cmp = str_compare( lhs.data( ), rhs.data( ),
-				                        ( std::min )( lhs.size( ), rhs.size( ) ) );
-				if( cmp == 0 ) {
+				int const ret =
+				  str_compare( lhs.data( ), rhs.data( ),
+				               ( std::min )( lhs.size( ), rhs.size( ) ), cmp );
+				if( ret == 0 ) {
 					if( lhs.size( ) < rhs.size( ) ) {
 						return -1;
 					}
@@ -943,52 +945,60 @@ namespace daw {
 						return 1;
 					}
 				}
-				return cmp;
+				return ret;
 			}
 
-			template<string_view_bounds_type B>
-			[[nodiscard]] constexpr int
-			compare( basic_string_view<CharT, B> rhs ) const {
+			template<typename Compare = std::less<>, string_view_bounds_type B>
+			[[nodiscard]] constexpr int compare( basic_string_view<CharT, B> rhs,
+			                                     Compare cmp = Compare{ } ) const {
 				return compare(
-				  *this, basic_string_view( std::data( rhs ), std::size( rhs ) ) );
+				  *this, basic_string_view( std::data( rhs ), std::size( rhs ) ), cmp );
 			}
 
-			template<typename StringView,
+			template<typename Compare = std::less<>, typename StringView,
 			         DAW_REQ_CONTIG_CHAR_RANGE( StringView, CharT )>
-			[[nodiscard]] constexpr int compare( StringView &&rhs ) const {
+			[[nodiscard]] constexpr int compare( StringView &&rhs,
+			                                     Compare cmp = Compare{ } ) const {
 				return compare(
-				  *this, basic_string_view( std::data( rhs ), std::size( rhs ) ) );
+				  *this, basic_string_view( std::data( rhs ), std::size( rhs ) ), cmp );
 			}
 
-			template<std::size_t N>
-			[[nodiscard]] constexpr int compare( CharT const ( &rhs )[N] ) const {
-				return compare( *this, basic_string_view( rhs, N - 1 ) );
+			template<typename Compare = std::less<>, std::size_t N>
+			[[nodiscard]] constexpr int compare( CharT const ( &rhs )[N],
+			                                     Compare cmp = Compare{ } ) const {
+				return compare( *this, basic_string_view( rhs, N - 1 ), cmp );
 			}
 
+			template<typename Compare = std::less<>>
 			constexpr int compare( size_type pos1, size_type count1,
-			                       basic_string_view v ) const {
-				return compare( substr( pos1, count1 ), v );
+			                       basic_string_view v,
+			                       Compare cmp = Compare{ } ) const {
+				return compare( substr( pos1, count1 ), v, cmp );
 			}
 
-			template<string_view_bounds_type Bounds>
+			template<typename Compare = std::less<>, string_view_bounds_type Bounds>
 			[[nodiscard]] constexpr int compare( size_type pos1, size_type count1,
 			                                     basic_string_view<CharT, Bounds> v,
-			                                     size_type pos2,
-			                                     size_type count2 ) const {
-				return compare( substr( pos1, count1 ), v.substr( pos2, count2 ) );
+			                                     size_type pos2, size_type count2,
+			                                     Compare cmp = Compare{ } ) const {
+				return compare( substr( pos1, count1 ), v.substr( pos2, count2 ), cmp );
 			}
 
-			[[nodiscard]] constexpr int compare( size_type pos1, size_type count1,
-			                                     const_pointer s ) const {
-				return compare( substr( pos1, count1 ),
-				                basic_string_view<CharT, BoundsType>( s ) );
-			}
-
+			template<typename Compare = std::less<>>
 			[[nodiscard]] constexpr int compare( size_type pos1, size_type count1,
 			                                     const_pointer s,
-			                                     size_type count2 ) const {
+			                                     Compare cmp = Compare{ } ) const {
 				return compare( substr( pos1, count1 ),
-				                basic_string_view<CharT, BoundsType>( s, count2 ) );
+				                basic_string_view<CharT, BoundsType>( s ), cmp );
+			}
+
+			template<typename Compare = std::less<>>
+			[[nodiscard]] constexpr int compare( size_type pos1, size_type count1,
+			                                     const_pointer s, size_type count2,
+			                                     Compare cmp = Compare{ } ) const {
+				return compare( substr( pos1, count1 ),
+				                basic_string_view<CharT, BoundsType>( s, count2 ),
+				                cmp );
 			}
 
 			template<string_view_bounds_type Bounds>
