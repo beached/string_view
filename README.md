@@ -32,6 +32,18 @@ uri_parts parse_url( string_view uri_string ) {
 By default the `pop_front_until` methods will discard the delimiter. This behaviour can be controlled by supplying an
 addition parameter `nodiscard`. The result being that the delimiter is left in the original `string_view`
 
+# Easy string splitting
+
+String splitting is trivial with the `pop_front_until` and `trim_copy` methods. It does not require allocation either.
+
+```c++
+string_view2 foo = "1,2,3,4";
+while( not foo.empty( ) ) {
+    auto part = foo.pop_front_until( ',' ).trim_copy( );
+    // part will equal "1", "2", "3", and "4"
+}
+```
+
 # Storage of end of range
 
 The storage of the start/end of the string range is optimized, by default, for a `remove_prefix` like work load. There
