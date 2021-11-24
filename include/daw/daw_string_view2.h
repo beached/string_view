@@ -508,7 +508,7 @@ namespace daw {
 			/// @brief Empty the range
 			/// @post size( ) == 0
 			constexpr void clear( ) {
-				m_last = make_last<BoundsType>( nullptr, 0 );
+				m_last = make_last<BoundsType>( nullptr, size_type{0} );
 			}
 
 			/// @brief Reset the range to a default constructed state
@@ -516,7 +516,7 @@ namespace daw {
 			/// @post size( ) == 0
 			constexpr void reset( ) {
 				m_first = nullptr;
-				m_last = make_last<BoundsType>( nullptr, 0 );
+				m_last = make_last<BoundsType>( nullptr, size_type{0} );
 			}
 
 			/// @brief Increment the data( ) pointer by n. If string_view is
