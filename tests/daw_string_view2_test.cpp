@@ -1458,6 +1458,30 @@ namespace daw {
 		daw_expecting( svfoo.size( ), sv.size( ) );
 		daw_expecting( svfoo, sv );
 	}
+
+	void daw_trim_prefix_test_001( ) {
+		daw::sv2::string_view sv = "  Hello World";
+		sv.trim_prefix( );
+		daw_expecting( sv, "Hello World" );
+	}
+
+	void daw_trim_prefix_test_002( ) {
+		daw::sv2::string_view sv = "";
+		sv.trim_prefix( );
+		daw_expecting( sv, "" );
+	}
+
+	void daw_trim_suffix_test_001( ) {
+		daw::sv2::string_view sv = "Hello World  ";
+		sv.trim_suffix( );
+		daw_expecting( sv, "Hello World" );
+	}
+
+	void daw_trim_suffix_test_002( ) {
+		daw::sv2::string_view sv = "";
+		sv.trim_suffix( );
+		daw_expecting( sv, "" );
+	}
 } // namespace daw
 
 int main( )
@@ -1577,6 +1601,10 @@ int main( )
 	daw::daw_remove_prefix_until_test_001( );
 	daw::daw_remove_prefix_until_test_002( );
 	daw::daw_arbutrary_string_view_list_001( );
+	daw::daw_trim_prefix_test_001( );
+	daw::daw_trim_prefix_test_002( );
+	daw::daw_trim_suffix_test_001( );
+	daw::daw_trim_suffix_test_002( );
 	//#endif
 }
 #if defined( DAW_USE_EXCEPTIONS )
