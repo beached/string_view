@@ -128,6 +128,8 @@ elseif (MSVC)
     add_definitions(-DNOMINMAX -DD_WIN32_WINNT=0x0601)
     add_compile_options("/permissive-")
     add_compile_options("/wd4146")
+    # MSVC has a bug that breaks constexpr pointers to string literals, the trailing zero
+    add_compile_options("/GF+")
     if (DAW_WERROR)
         if (CMAKE_CXX_FLAGS MATCHES "/W[0-4]")
             string(REGEX REPLACE "/W[0-4]" "/W4" CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS}")

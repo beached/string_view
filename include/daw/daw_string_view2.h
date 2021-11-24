@@ -15,6 +15,7 @@
 #include <daw/daw_exception.h>
 #include <daw/daw_fnv1a_hash.h>
 #include <daw/daw_generic_hash.h>
+#include <daw/daw_logic.h>
 #include <daw/daw_math.h>
 #include <daw/daw_move.h>
 #include <daw/daw_swap.h>
@@ -172,25 +173,23 @@ namespace daw {
 			  std::conditional_t<is_last_a_pointer_v<BoundsType>, difference_type,
 			                     size_type>;
 
-			template<string_view_bounds_type Bounds>
+			template<string_view_bounds_type Bounds, typename LastType>
 			DAW_ATTRIB_INLINE static constexpr last_type
-			make_last( const_pointer f, const_pointer l ) noexcept {
-				if constexpr( is_last_a_pointer_v<Bounds> ) {
-					(void)f;
-					return l;
+			make_last( const_pointer f, LastType l ) noexcept {
+				if constexpr( std::is_pointer_v<LastType> ) {
+					if constexpr( is_last_a_pointer_v<Bounds> ) {
+						(void)f;
+						return l;
+					} else {
+						return static_cast<last_type>( l - f );
+					}
 				} else {
-					return static_cast<last_type>( l - f );
-				}
-			}
-
-			template<string_view_bounds_type Bounds>
-			DAW_ATTRIB_INLINE static constexpr last_type
-			make_last( const_pointer f, size_type s ) noexcept {
-				if constexpr( is_last_a_pointer_v<Bounds> ) {
-					return f + static_cast<difference_type>( s );
-				} else {
-					(void)f;
-					return s;
+					if constexpr( is_last_a_pointer_v<Bounds> ) {
+						return f + static_cast<difference_type>( l );
+					} else {
+						(void)f;
+						return static_cast<size_type>( l );
+					}
 				}
 			}
 
@@ -873,7 +872,9 @@ namespace daw {
 			constexpr void resize( size_type new_size ) {
 				daw::exception::precondition_check<std::out_of_range>( new_size <=
 				                                                       size( ) );
-				m_last = std::next( m_first, static_cast<ptrdiff_t>( new_size ) );
+				m_last = make_last<BoundsType>(
+				  m_first,
+				  std::next( m_first, static_cast<difference_type>( new_size ) ) );
 			}
 
 			constexpr size_type copy( pointer dest, size_type count,
@@ -913,18 +914,19 @@ namespace daw {
 			}
 
 		public:
-			template<string_view_bounds_type BL, string_view_bounds_type BR>
+			template<typename Compare = std::less<void>, string_view_bounds_type BL,
+			         string_view_bounds_type BR>
 			[[nodiscard]] static constexpr int
 			compare( basic_string_view<CharT, BL> lhs,
-			         basic_string_view<CharT, BR> rhs ) {
-				auto const str_compare = []( CharT const *p0, CharT const *p1,
-				                             size_type len ) {
+			         basic_string_view<CharT, BR> rhs, Compare cmp = Compare{ } ) {
+				constexpr auto const str_compare = []( CharT const *p0, CharT const *p1,
+				                                       size_type len, Compare &c ) {
 					auto const last = p0 + len;
 					while( p0 != last ) {
-						if( *p0 != *p1 ) {
-							if( *p0 < *p1 ) {
-								return -1;
-							}
+						if( c( *p0, *p1 ) ) {
+							return -1;
+						}
+						if( c( *p1, *p0 ) ) {
 							return 1;
 						}
 						++p0;
@@ -933,9 +935,10 @@ namespace daw {
 					return 0;
 				};
 
-				auto cmp = str_compare( lhs.data( ), rhs.data( ),
-				                        ( std::min )( lhs.size( ), rhs.size( ) ) );
-				if( cmp == 0 ) {
+				int const ret =
+				  str_compare( lhs.data( ), rhs.data( ),
+				               ( std::min )( lhs.size( ), rhs.size( ) ), cmp );
+				if( ret == 0 ) {
 					if( lhs.size( ) < rhs.size( ) ) {
 						return -1;
 					}
@@ -943,52 +946,60 @@ namespace daw {
 						return 1;
 					}
 				}
-				return cmp;
+				return ret;
 			}
 
-			template<string_view_bounds_type B>
-			[[nodiscard]] constexpr int
-			compare( basic_string_view<CharT, B> rhs ) const {
+			template<typename Compare = std::less<>, string_view_bounds_type B>
+			[[nodiscard]] constexpr int compare( basic_string_view<CharT, B> rhs,
+			                                     Compare cmp = Compare{ } ) const {
 				return compare(
-				  *this, basic_string_view( std::data( rhs ), std::size( rhs ) ) );
+				  *this, basic_string_view( std::data( rhs ), std::size( rhs ) ), cmp );
 			}
 
-			template<typename StringView,
+			template<typename Compare = std::less<>, typename StringView,
 			         DAW_REQ_CONTIG_CHAR_RANGE( StringView, CharT )>
-			[[nodiscard]] constexpr int compare( StringView &&rhs ) const {
+			[[nodiscard]] constexpr int compare( StringView &&rhs,
+			                                     Compare cmp = Compare{ } ) const {
 				return compare(
-				  *this, basic_string_view( std::data( rhs ), std::size( rhs ) ) );
+				  *this, basic_string_view( std::data( rhs ), std::size( rhs ) ), cmp );
 			}
 
-			template<std::size_t N>
-			[[nodiscard]] constexpr int compare( CharT const ( &rhs )[N] ) const {
-				return compare( *this, basic_string_view( rhs, N - 1 ) );
+			template<typename Compare = std::less<>, std::size_t N>
+			[[nodiscard]] constexpr int compare( CharT const ( &rhs )[N],
+			                                     Compare cmp = Compare{ } ) const {
+				return compare( *this, basic_string_view( rhs, N - 1 ), cmp );
 			}
 
+			template<typename Compare = std::less<>>
 			constexpr int compare( size_type pos1, size_type count1,
-			                       basic_string_view v ) const {
-				return compare( substr( pos1, count1 ), v );
+			                       basic_string_view v,
+			                       Compare cmp = Compare{ } ) const {
+				return compare( substr( pos1, count1 ), v, cmp );
 			}
 
-			template<string_view_bounds_type Bounds>
+			template<typename Compare = std::less<>, string_view_bounds_type Bounds>
 			[[nodiscard]] constexpr int compare( size_type pos1, size_type count1,
 			                                     basic_string_view<CharT, Bounds> v,
-			                                     size_type pos2,
-			                                     size_type count2 ) const {
-				return compare( substr( pos1, count1 ), v.substr( pos2, count2 ) );
+			                                     size_type pos2, size_type count2,
+			                                     Compare cmp = Compare{ } ) const {
+				return compare( substr( pos1, count1 ), v.substr( pos2, count2 ), cmp );
 			}
 
-			[[nodiscard]] constexpr int compare( size_type pos1, size_type count1,
-			                                     const_pointer s ) const {
-				return compare( substr( pos1, count1 ),
-				                basic_string_view<CharT, BoundsType>( s ) );
-			}
-
+			template<typename Compare = std::less<>>
 			[[nodiscard]] constexpr int compare( size_type pos1, size_type count1,
 			                                     const_pointer s,
-			                                     size_type count2 ) const {
+			                                     Compare cmp = Compare{ } ) const {
 				return compare( substr( pos1, count1 ),
-				                basic_string_view<CharT, BoundsType>( s, count2 ) );
+				                basic_string_view<CharT, BoundsType>( s ), cmp );
+			}
+
+			template<typename Compare = std::less<>>
+			[[nodiscard]] constexpr int compare( size_type pos1, size_type count1,
+			                                     const_pointer s, size_type count2,
+			                                     Compare cmp = Compare{ } ) const {
+				return compare( substr( pos1, count1 ),
+				                basic_string_view<CharT, BoundsType>( s, count2 ),
+				                cmp );
 			}
 
 			template<string_view_bounds_type Bounds>
@@ -1670,6 +1681,59 @@ namespace daw {
 			operator>=( StringView &&lhs, basic_string_view rhs ) noexcept {
 				return basic_string_view( std::data( lhs ), std::size( lhs ) )
 				         .compare( rhs ) >= 0;
+			}
+
+		private:
+			struct is_space {
+				inline constexpr bool operator( )( CharT c ) const noexcept {
+					return daw::nsc_or( c == CharT( ' ' ), c == CharT( '\t' ),
+					                    c == CharT( '\n' ), c == CharT( '\v' ),
+					                    c == CharT( '\f' ), c == CharT( '\r' ) );
+				}
+			};
+
+		public:
+			template<typename UnaryPred, DAW_REQ_UNARY_PRED( UnaryPred, CharT )>
+			constexpr void remove_prefix_while( UnaryPred is_whitespace ) noexcept {
+				auto const last_pos = find_first_not_of_if( is_whitespace );
+				remove_prefix( last_pos );
+			}
+
+			constexpr void trim_prefix( ) noexcept {
+				remove_prefix_while( is_space{ } );
+			}
+
+			constexpr basic_string_view trim_prefix_copy( ) const noexcept {
+				auto result = *this;
+				result.remove_prefix_while( is_space{ } );
+				return result;
+			}
+
+			template<typename UnaryPred, DAW_REQ_UNARY_PRED( UnaryPred, CharT )>
+			constexpr void remove_suffix_while( UnaryPred is_whitespace ) noexcept {
+				auto pos = find_last_not_of_if( is_whitespace );
+				resize( pos + 1U );
+			}
+
+			constexpr void trim_suffix( ) noexcept {
+				remove_suffix_while( is_space{ } );
+			}
+
+			constexpr basic_string_view trim_suffix_copy( ) const noexcept {
+				auto result = *this;
+				result = remove_suffix_while( is_space{ } );
+				return result;
+			}
+
+			constexpr void trim( ) noexcept {
+				trim_prefix( is_space{ } );
+				trim_suffix( is_space{ } );
+			}
+
+			constexpr basic_string_view trim_copy( ) const noexcept {
+				auto result = trim_prefix_copy( );
+				result.trim_suffix( );
+				return result;
 			}
 		}; // basic_string_view
 

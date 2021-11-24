@@ -32,11 +32,11 @@ add_test(daw_string_view2_ptrsize_test daw_string_view2_ptrsize_bin)
 add_dependencies(full daw_string_view2_ptrsize_bin)
 
 # Work around MSVC and pointers to string_literal end
-if ((${CMAKE_CXX_COMPILER_ID} STREQUAL "Clang") OR (${CMAKE_CXX_COMPILER_ID} STREQUAL "AppleClang") OR (${CMAKE_CXX_COMPILER_ID} STREQUAL "GNU"))
+#if ((${CMAKE_CXX_COMPILER_ID} STREQUAL "Clang") OR (${CMAKE_CXX_COMPILER_ID} STREQUAL "AppleClang") OR (${CMAKE_CXX_COMPILER_ID} STREQUAL "GNU"))
     add_executable(daw_string_view2_ptrptr_bin daw_string_view2_test.cpp)
     target_link_libraries(daw_string_view2_ptrptr_bin PRIVATE daw_test)
     target_compile_definitions(daw_string_view2_ptrptr_bin PRIVATE -DDAW_SV_USE_PTRPTR)
     add_test(daw_string_view2_ptrptr_test daw_string_view2_ptrptr_bin)
     add_dependencies(full daw_string_view2_ptrptr_bin)
-endif ()
+#endif ()
 

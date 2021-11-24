@@ -19,9 +19,9 @@ jobs:
       - name: Download & Build Dependencies
         run: |
           sudo apt update
-          sudo apt install clang-13 libc++-13-dev libc++abi-13-dev libunwind-dev ninja-build
+          sudo apt install clang-13 libc++-dev libc++abi-dev libunwind-dev ninja-build
       - name: Build Dependencies
-        run: ./ci_scripts/ci_ubuntu_deps.sh Debug 20 clang-13 clang++-13 "-stdlib=libc++ -Wno-reserved-identifier"
+        run: ./ci_scripts/ci_ubuntu_deps.sh Debug 20 clang-13 clang++-13 "-Wno-reserved-identifier"
       - name: Build
         run: ./ci_scripts/ci_ubuntu_build.sh Debug
       - name: Test
@@ -35,9 +35,9 @@ jobs:
       - name: Download & Build Dependencies
         run: |
           sudo apt update
-          sudo apt install clang-13 libc++-13-dev libc++abi-13-dev libunwind-dev ninja-build
+          sudo apt install clang-13 libc++-dev libc++abi-dev libunwind-dev ninja-build
       - name: Build Dependencies
-        run: ./ci_scripts/ci_ubuntu_deps.sh Release 20 clang-13 clang++-13 "-stdlib=libc++ -Wno-reserved-identifier"
+        run: ./ci_scripts/ci_ubuntu_deps.sh Release 20 clang-13 clang++-13 "-Wno-reserved-identifier"
       - name: Build
         run: ./ci_scripts/ci_ubuntu_build.sh Release
       - name: Test
