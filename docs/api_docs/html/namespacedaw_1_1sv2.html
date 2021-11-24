@@ -113,6 +113,7 @@ Enumerations</h2></td></tr>
 <tr class="memitem:aa920a6f0aaad67c79fdcd6eb1001a8bc"><td class="memItemLeft" align="right" valign="top">enum class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespacedaw_1_1sv2.html#aa920a6f0aaad67c79fdcd6eb1001a8bc">string_view_bounds_type</a> { <a class="el" href="namespacedaw_1_1sv2.html#aa920a6f0aaad67c79fdcd6eb1001a8bcaccac8a66d468e2522611be86933cc0d9">pointer</a>
 , <a class="el" href="namespacedaw_1_1sv2.html#aa920a6f0aaad67c79fdcd6eb1001a8bcaf7bd60b75b29d79b660a2859395c1a24">size</a>
  }</td></tr>
+<tr class="memdesc:aa920a6f0aaad67c79fdcd6eb1001a8bc"><td class="mdescLeft">&#160;</td><td class="mdescRight">How is the end of range stored in string_view.  <a href="namespacedaw_1_1sv2.html#aa920a6f0aaad67c79fdcd6eb1001a8bc">More...</a><br /></td></tr>
 <tr class="separator:aa920a6f0aaad67c79fdcd6eb1001a8bc"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="func-members" name="func-members"></a>
@@ -214,9 +215,13 @@ Variables</h2></td></tr>
   </tr>
 </table>
 </div><div class="memdoc">
+
+<p>How is the end of range stored in string_view. </p>
 <table class="fieldtable">
-<tr><th colspan="2">Enumerator</th></tr><tr><td class="fieldname"><a id="aa920a6f0aaad67c79fdcd6eb1001a8bcaccac8a66d468e2522611be86933cc0d9" name="aa920a6f0aaad67c79fdcd6eb1001a8bcaccac8a66d468e2522611be86933cc0d9"></a>pointer&#160;</td><td class="fielddoc"></td></tr>
-<tr><td class="fieldname"><a id="aa920a6f0aaad67c79fdcd6eb1001a8bcaf7bd60b75b29d79b660a2859395c1a24" name="aa920a6f0aaad67c79fdcd6eb1001a8bcaf7bd60b75b29d79b660a2859395c1a24"></a>size&#160;</td><td class="fielddoc"></td></tr>
+<tr><th colspan="2">Enumerator</th></tr><tr><td class="fieldname"><a id="aa920a6f0aaad67c79fdcd6eb1001a8bcaccac8a66d468e2522611be86933cc0d9" name="aa920a6f0aaad67c79fdcd6eb1001a8bcaccac8a66d468e2522611be86933cc0d9"></a>pointer&#160;</td><td class="fielddoc"><p >Store the end of range as a pointer. This is optimal for code where calls to methods like remove_prefix dominate. </p>
+</td></tr>
+<tr><td class="fieldname"><a id="aa920a6f0aaad67c79fdcd6eb1001a8bcaf7bd60b75b29d79b660a2859395c1a24" name="aa920a6f0aaad67c79fdcd6eb1001a8bcaf7bd60b75b29d79b660a2859395c1a24"></a>size&#160;</td><td class="fielddoc"><p >Store the end of range as a size_type. This is optimal for where calls to size( ) or remove_suffix like calls dominate. </p>
+</td></tr>
 </table>
 
 </div>

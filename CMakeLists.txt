@@ -9,7 +9,7 @@
 cmake_minimum_required(VERSION 3.14)
 
 project("daw-string-view"
-        VERSION "0.1.0"
+        VERSION "0.1.1"
         DESCRIPTION "A std::string_view like type with enhanced parsing helpers"
         HOMEPAGE_URL "https://github.com/beached/string_view"
         LANGUAGES C CXX
